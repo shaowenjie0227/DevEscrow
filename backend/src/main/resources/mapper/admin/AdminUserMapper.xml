@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.admin.mapper.AdminUserMapper">
+
+    <resultMap id="AdminUserResultMap" type="com.programmer.escrow.admin.entity.AdminUserEntity">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="password_hash" property="passwordHash"/>
+        <result column="real_name" property="realName"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="role_code" property="roleCode"/>
+        <result column="permission_json" property="permissionJson"/>
+        <result column="status" property="status"/>
+        <result column="last_login_at" property="lastLoginAt"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, username, password_hash, real_name, phone, email, role_code,
+        permission_json, status, last_login_at, created_at, updated_at
+    </sql>
+
+    <select id="selectByUsername" resultMap="AdminUserResultMap">
+        select <include refid="BaseColumns"/>
+        from `admin_user`
+        where username = #{username}
+        limit 1
+    </select>
+
+    <select id="selectById" resultMap="AdminUserResultMap">
+        select <include refid="BaseColumns"/>
+        from `admin_user`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <update id="updateLastLoginAt">
+        update `admin_user`
+        set last_login_at = now(),
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

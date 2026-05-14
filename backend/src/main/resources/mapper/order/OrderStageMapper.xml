@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.order.mapper.OrderStageMapper">
+
+    <resultMap id="OrderStageResultMap" type="com.programmer.escrow.order.entity.OrderStageEntity">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="stage_no" property="stageNo"/>
+        <result column="stage_name" property="stageName"/>
+        <result column="stage_desc" property="stageDesc"/>
+        <result column="stage_amount" property="stageAmount"/>
+        <result column="plan_start_at" property="planStartAt"/>
+        <result column="plan_end_at" property="planEndAt"/>
+        <result column="submit_content" property="submitContent"/>
+        <result column="deliverable_json" property="deliverableJson"/>
+        <result column="status" property="status"/>
+        <result column="actual_start_at" property="actualStartAt"/>
+        <result column="actual_submit_at" property="actualSubmitAt"/>
+        <result column="actual_accept_at" property="actualAcceptAt"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, order_id, stage_no, stage_name, stage_desc, stage_amount, plan_start_at,
+        plan_end_at, submit_content, deliverable_json, status, actual_start_at,
+        actual_submit_at, actual_accept_at, reject_reason, version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.order.entity.OrderStageEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `order_stage` (
+            order_id, stage_no, stage_name, stage_desc, stage_amount, plan_start_at,
+            plan_end_at, submit_content, deliverable_json, status, actual_start_at,
+            actual_submit_at, actual_accept_at, reject_reason, version, created_at, updated_at
+        ) values (
+            #{orderId}, #{stageNo}, #{stageName}, #{stageDesc}, #{stageAmount}, #{planStartAt},
+            #{planEndAt}, #{submitContent}, #{deliverableJson}, #{status}, #{actualStartAt},
+            #{actualSubmitAt}, #{actualAcceptAt}, #{rejectReason}, #{version}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectByOrderIdAndStageNo" resultMap="OrderStageResultMap">
+        select <include refid="BaseColumns"/>
+        from `order_stage`
+        where order_id = #{orderId}
+          and stage_no = #{stageNo}
+        limit 1
+    </select>
+
+    <select id="countByOrderId" resultType="int">
+        select count(1)
+        from `order_stage`
+        where order_id = #{orderId}
+    </select>
+
+    <update id="updateToInProgress">
+        update `order_stage`
+        set status = 1,
+            actual_start_at = #{actualStartAt},
+            updated_at = now()
+        where order_id = #{orderId}
+          and stage_no = #{stageNo}
+          and status in (0, 4)
+    </update>
+
+    <update id="updateToSubmitted">
+        update `order_stage`
+        set status = 2,
+            submit_content = #{submitContent},
+            deliverable_json = #{deliverableJson},
+            actual_submit_at = #{actualSubmitAt},
+            updated_at = now()
+        where order_id = #{orderId}
+          and stage_no = #{stageNo}
+          and status = 1
+    </update>
+
+    <update id="updateToAccepted">
+        update `order_stage`
+        set status = 3,
+            actual_accept_at = #{actualAcceptAt},
+            updated_at = now()
+        where order_id = #{orderId}
+          and stage_no = #{stageNo}
+          and status = 2
+    </update>
+
+    <update id="updateToRejected">
+        update `order_stage`
+        set status = 4,
+            reject_reason = #{rejectReason},
+            updated_at = now()
+        where order_id = #{orderId}
+          and stage_no = #{stageNo}
+          and status = 2
+    </update>
+</mapper>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.quote.mapper.QuoteMapper">
+
+    <resultMap id="QuoteResultMap" type="com.programmer.escrow.quote.entity.QuoteEntity">
+        <id column="id" property="id"/>
+        <result column="quote_no" property="quoteNo"/>
+        <result column="demand_id" property="demandId"/>
+        <result column="developer_id" property="developerId"/>
+        <result column="price_total" property="priceTotal"/>
+        <result column="estimated_days" property="estimatedDays"/>
+        <result column="tech_solution" property="techSolution"/>
+        <result column="delivery_desc" property="deliveryDesc"/>
+        <result column="attach_json" property="attachJson"/>
+        <result column="valid_until" property="validUntil"/>
+        <result column="status" property="status"/>
+        <result column="selected_at" property="selectedAt"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, quote_no, demand_id, developer_id, price_total, estimated_days,
+        tech_solution, delivery_desc, attach_json, valid_until, status,
+        selected_at, version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.quote.entity.QuoteEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `quote` (
+            quote_no, demand_id, developer_id, price_total, estimated_days,
+            tech_solution, delivery_desc, attach_json, valid_until, status,
+            selected_at, version, created_at, updated_at
+        ) values (
+            #{quoteNo}, #{demandId}, #{developerId}, #{priceTotal}, #{estimatedDays},
+            #{techSolution}, #{deliveryDesc}, #{attachJson}, #{validUntil}, #{status},
+            #{selectedAt}, #{version}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="QuoteResultMap">
+        select <include refid="BaseColumns"/>
+        from `quote`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByDemandAndDeveloper" resultMap="QuoteResultMap">
+        select <include refid="BaseColumns"/>
+        from `quote`
+        where demand_id = #{demandId}
+          and developer_id = #{developerId}
+        limit 1
+    </select>
+
+    <select id="selectByDeveloperId" resultMap="QuoteResultMap">
+        select <include refid="BaseColumns"/>
+        from `quote`
+        where developer_id = #{developerId}
+        order by id desc
+    </select>
+
+    <select id="selectByDemandId" resultMap="QuoteResultMap">
+        select <include refid="BaseColumns"/>
+        from `quote`
+        where demand_id = #{demandId}
+        order by id desc
+    </select>
+
+    <update id="updateSelected">
+        update `quote`
+        set status = 1,
+            selected_at = #{selectedAt},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="rejectOtherQuotes">
+        update `quote`
+        set status = 2,
+            updated_at = now()
+        where demand_id = #{demandId}
+          and id != #{selectedQuoteId}
+          and status = 0
+    </update>
+</mapper>

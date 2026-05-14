@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.dispute.mapper.DisputeMapper">
+
+    <resultMap id="DisputeResultMap" type="com.programmer.escrow.dispute.entity.DisputeEntity">
+        <id column="id" property="id"/>
+        <result column="dispute_no" property="disputeNo"/>
+        <result column="order_id" property="orderId"/>
+        <result column="initiator_id" property="initiatorId"/>
+        <result column="respondent_id" property="respondentId"/>
+        <result column="admin_id" property="adminId"/>
+        <result column="dispute_type" property="disputeType"/>
+        <result column="reason" property="reason"/>
+        <result column="detail" property="detail"/>
+        <result column="evidence_json" property="evidenceJson"/>
+        <result column="freeze_amount" property="freezeAmount"/>
+        <result column="status" property="status"/>
+        <result column="result_type" property="resultType"/>
+        <result column="resolution_note" property="resolutionNote"/>
+        <result column="resolved_at" property="resolvedAt"/>
+        <result column="closed_at" property="closedAt"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, dispute_no, order_id, initiator_id, respondent_id, admin_id, dispute_type,
+        reason, detail, evidence_json, freeze_amount, status, result_type, resolution_note,
+        resolved_at, closed_at, version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.dispute.entity.DisputeEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `dispute` (
+            dispute_no, order_id, initiator_id, respondent_id, admin_id, dispute_type,
+            reason, detail, evidence_json, freeze_amount, status, result_type, resolution_note,
+            resolved_at, closed_at, version, created_at, updated_at
+        ) values (
+            #{disputeNo}, #{orderId}, #{initiatorId}, #{respondentId}, #{adminId}, #{disputeType},
+            #{reason}, #{detail}, #{evidenceJson}, #{freezeAmount}, #{status}, #{resultType}, #{resolutionNote},
+            #{resolvedAt}, #{closedAt}, #{version}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="DisputeResultMap">
+        select <include refid="BaseColumns"/>
+        from `dispute`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByUserId" resultMap="DisputeResultMap">
+        select <include refid="BaseColumns"/>
+        from `dispute`
+        where initiator_id = #{userId}
+           or respondent_id = #{userId}
+        order by id desc
+    </select>
+
+    <select id="selectAll" resultMap="DisputeResultMap">
+        select <include refid="BaseColumns"/>
+        from `dispute`
+        order by id desc
+    </select>
+
+    <update id="updateResolved">
+        update `dispute`
+        set admin_id = #{adminId},
+            status = 3,
+            result_type = #{resultType},
+            resolution_note = #{resolutionNote},
+            resolved_at = #{resolvedAt},
+            closed_at = #{closedAt},
+            updated_at = now()
+        where id = #{id}
+          and status in (0, 1, 2)
+    </update>
+</mapper>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.demand.mapper.DemandMapper">
+
+    <resultMap id="DemandResultMap" type="com.programmer.escrow.demand.entity.DemandEntity">
+        <id column="id" property="id"/>
+        <result column="demand_no" property="demandNo"/>
+        <result column="publisher_id" property="publisherId"/>
+        <result column="title" property="title"/>
+        <result column="summary" property="summary"/>
+        <result column="detail" property="detail"/>
+        <result column="category" property="category"/>
+        <result column="budget_min" property="budgetMin"/>
+        <result column="budget_max" property="budgetMax"/>
+        <result column="expected_days" property="expectedDays"/>
+        <result column="delivery_type" property="deliveryType"/>
+        <result column="attachments_json" property="attachmentsJson"/>
+        <result column="contact_note" property="contactNote"/>
+        <result column="quote_count" property="quoteCount"/>
+        <result column="review_status" property="reviewStatus"/>
+        <result column="status" property="status"/>
+        <result column="publish_at" property="publishAt"/>
+        <result column="closed_at" property="closedAt"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, demand_no, publisher_id, title, summary, detail, category, budget_min,
+        budget_max, expected_days, delivery_type, attachments_json, contact_note,
+        quote_count, review_status, status, publish_at, closed_at, reject_reason,
+        version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.demand.entity.DemandEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `demand` (
+            demand_no, publisher_id, title, summary, detail, category, budget_min,
+            budget_max, expected_days, delivery_type, attachments_json, contact_note,
+            quote_count, review_status, status, publish_at, closed_at, reject_reason,
+            version, created_at, updated_at
+        ) values (
+            #{demandNo}, #{publisherId}, #{title}, #{summary}, #{detail}, #{category}, #{budgetMin},
+            #{budgetMax}, #{expectedDays}, #{deliveryType}, #{attachmentsJson}, #{contactNote},
+            #{quoteCount}, #{reviewStatus}, #{status}, #{publishAt}, #{closedAt}, #{rejectReason},
+            #{version}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="DemandResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByPublisherId" resultMap="DemandResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand`
+        where publisher_id = #{publisherId}
+        order by id desc
+    </select>
+
+    <select id="selectMarketDemands" resultMap="DemandResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand`
+        where review_status = 1
+          and status in (2, 3)
+        order by publish_at desc, id desc
+    </select>
+
+    <select id="selectAdminList" resultMap="DemandResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand`
+        <where>
+            <if test="reviewStatus != null">
+                and review_status = #{reviewStatus}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+        order by id desc
+    </select>
+
+    <update id="updateAuditStatus">
+        update `demand`
+        set review_status = #{reviewStatus},
+            status = #{status},
+            publish_at = #{publishAt},
+            reject_reason = #{rejectReason},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="incrementQuoteCount">
+        update `demand`
+        set quote_count = quote_count + 1,
+            status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `demand`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

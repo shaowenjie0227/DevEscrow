@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.user.mapper.UserMapper">
+
+    <resultMap id="UserResultMap" type="com.programmer.escrow.user.entity.UserEntity">
+        <id column="id" property="id"/>
+        <result column="user_no" property="userNo"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="password_hash" property="passwordHash"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="user_type" property="userType"/>
+        <result column="real_name" property="realName"/>
+        <result column="id_verify_status" property="idVerifyStatus"/>
+        <result column="developer_status" property="developerStatus"/>
+        <result column="skill_tags" property="skillTags"/>
+        <result column="intro" property="intro"/>
+        <result column="rating" property="rating"/>
+        <result column="completed_order_count" property="completedOrderCount"/>
+        <result column="status" property="status"/>
+        <result column="last_login_at" property="lastLoginAt"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, user_no, phone, email, password_hash, nickname, avatar_url, user_type,
+        real_name, id_verify_status, developer_status, skill_tags, intro, rating,
+        completed_order_count, status, last_login_at, version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.user.entity.UserEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `user` (
+            user_no, phone, email, password_hash, nickname, avatar_url, user_type,
+            real_name, id_verify_status, developer_status, skill_tags, intro, rating,
+            completed_order_count, status, last_login_at, version, created_at, updated_at
+        ) values (
+            #{userNo}, #{phone}, #{email}, #{passwordHash}, #{nickname}, #{avatarUrl}, #{userType},
+            #{realName}, #{idVerifyStatus}, #{developerStatus}, #{skillTags}, #{intro}, #{rating},
+            #{completedOrderCount}, #{status}, #{lastLoginAt}, #{version}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="UserResultMap">
+        select <include refid="BaseColumns"/>
+        from `user`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByPhone" resultMap="UserResultMap">
+        select <include refid="BaseColumns"/>
+        from `user`
+        where phone = #{phone}
+        limit 1
+    </select>
+
+    <select id="selectByEmail" resultMap="UserResultMap">
+        select <include refid="BaseColumns"/>
+        from `user`
+        where email = #{email}
+        limit 1
+    </select>
+
+    <select id="selectByAccount" resultMap="UserResultMap">
+        select <include refid="BaseColumns"/>
+        from `user`
+        where phone = #{account}
+           or email = #{account}
+           or user_no = #{account}
+        limit 1
+    </select>
+
+    <select id="selectAdminList" resultMap="UserResultMap">
+        select <include refid="BaseColumns"/>
+        from `user`
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="userType != null">
+                and user_type = #{userType}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and (
+                    user_no like concat('%', #{keyword}, '%')
+                    or nickname like concat('%', #{keyword}, '%')
+                    or phone like concat('%', #{keyword}, '%')
+                    or email like concat('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        order by id desc
+    </select>
+
+    <update id="updateLastLoginAt">
+        update `user`
+        set last_login_at = now(),
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `user`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

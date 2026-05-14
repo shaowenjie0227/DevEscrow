@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.order.mapper.OrderMapper">
+
+    <resultMap id="OrderResultMap" type="com.programmer.escrow.order.entity.OrderEntity">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="demand_id" property="demandId"/>
+        <result column="quote_id" property="quoteId"/>
+        <result column="client_id" property="clientId"/>
+        <result column="developer_id" property="developerId"/>
+        <result column="order_title" property="orderTitle"/>
+        <result column="amount_total" property="amountTotal"/>
+        <result column="escrow_amount" property="escrowAmount"/>
+        <result column="platform_fee" property="platformFee"/>
+        <result column="pay_status" property="payStatus"/>
+        <result column="status" property="status"/>
+        <result column="current_stage_no" property="currentStageNo"/>
+        <result column="progress_percent" property="progressPercent"/>
+        <result column="selected_at" property="selectedAt"/>
+        <result column="paid_at" property="paidAt"/>
+        <result column="started_at" property="startedAt"/>
+        <result column="submitted_at" property="submittedAt"/>
+        <result column="accepted_at" property="acceptedAt"/>
+        <result column="completed_at" property="completedAt"/>
+        <result column="cancelled_at" property="cancelledAt"/>
+        <result column="cancel_reason" property="cancelReason"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, order_no, demand_id, quote_id, client_id, developer_id, order_title,
+        amount_total, escrow_amount, platform_fee, pay_status, status,
+        current_stage_no, progress_percent, selected_at, paid_at, started_at,
+        submitted_at, accepted_at, completed_at, cancelled_at, cancel_reason,
+        version, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.order.entity.OrderEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `orders` (
+            order_no, demand_id, quote_id, client_id, developer_id, order_title,
+            amount_total, escrow_amount, platform_fee, pay_status, status,
+            current_stage_no, progress_percent, selected_at, paid_at, started_at,
+            submitted_at, accepted_at, completed_at, cancelled_at, cancel_reason,
+            version, created_at, updated_at
+        ) values (
+            #{orderNo}, #{demandId}, #{quoteId}, #{clientId}, #{developerId}, #{orderTitle},
+            #{amountTotal}, #{escrowAmount}, #{platformFee}, #{payStatus}, #{status},
+            #{currentStageNo}, #{progressPercent}, #{selectedAt}, #{paidAt}, #{startedAt},
+            #{submittedAt}, #{acceptedAt}, #{completedAt}, #{cancelledAt}, #{cancelReason},
+            #{version}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="OrderResultMap">
+        select <include refid="BaseColumns"/>
+        from `orders`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByDemandId" resultMap="OrderResultMap">
+        select <include refid="BaseColumns"/>
+        from `orders`
+        where demand_id = #{demandId}
+        limit 1
+    </select>
+
+    <select id="selectByClientId" resultMap="OrderResultMap">
+        select <include refid="BaseColumns"/>
+        from `orders`
+        where client_id = #{clientId}
+        order by id desc
+    </select>
+
+    <select id="selectByDeveloperId" resultMap="OrderResultMap">
+        select <include refid="BaseColumns"/>
+        from `orders`
+        where developer_id = #{developerId}
+        order by id desc
+    </select>
+
+    <select id="selectAdminList" resultMap="OrderResultMap">
+        select <include refid="BaseColumns"/>
+        from `orders`
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and (
+                    order_no like concat('%', #{keyword}, '%')
+                    or order_title like concat('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        order by id desc
+    </select>
+
+    <update id="updateToPaid">
+        update `orders`
+        set pay_status = 1,
+            status = 2,
+            paid_at = #{paidAt},
+            updated_at = now()
+        where id = #{id}
+          and client_id = #{clientId}
+          and status = 1
+    </update>
+
+    <update id="updateToInProgress">
+        update `orders`
+        set status = 3,
+            started_at = #{startedAt},
+            progress_percent = 5,
+            updated_at = now()
+        where id = #{id}
+          and developer_id = #{developerId}
+          and status = 2
+    </update>
+
+    <update id="updateToWaitAccept">
+        update `orders`
+        set status = 4,
+            submitted_at = #{submittedAt},
+            progress_percent = #{progressPercent},
+            updated_at = now()
+        where id = #{id}
+          and developer_id = #{developerId}
+          and current_stage_no = #{currentStageNo}
+          and status = 3
+    </update>
+
+    <update id="updateToCompleted">
+        update `orders`
+        set status = 5,
+            pay_status = 2,
+            accepted_at = #{acceptedAt},
+            completed_at = #{completedAt},
+            progress_percent = 100,
+            updated_at = now()
+        where id = #{id}
+          and client_id = #{clientId}
+          and current_stage_no = #{currentStageNo}
+          and status = 4
+    </update>
+
+    <update id="updateToRejected">
+        update `orders`
+        set status = 3,
+            progress_percent = #{progressPercent},
+            updated_at = now()
+        where id = #{id}
+          and client_id = #{clientId}
+          and current_stage_no = #{currentStageNo}
+          and status = 4
+    </update>
+
+    <update id="advanceToNextStage">
+        update `orders`
+        set status = 3,
+            current_stage_no = #{nextStageNo},
+            progress_percent = #{progressPercent},
+            updated_at = now()
+        where id = #{id}
+          and client_id = #{clientId}
+          and current_stage_no = #{currentStageNo}
+          and status = 4
+    </update>
+
+    <update id="updateToDispute">
+        update `orders`
+        set status = 7,
+            updated_at = now()
+        where id = #{id}
+          and status in (2, 3, 4)
+    </update>
+
+    <update id="updateAfterDispute">
+        update `orders`
+        set status = #{status},
+            pay_status = #{payStatus},
+            updated_at = now()
+        where id = #{id}
+          and status = 7
+    </update>
+</mapper>
