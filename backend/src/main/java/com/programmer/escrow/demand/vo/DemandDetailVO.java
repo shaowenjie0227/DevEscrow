@@ -17,6 +17,7 @@ public class DemandDetailVO {
     private String title;
     private String summary;
     private String detail;
+    private Long categoryId;
     private String category;
     private BigDecimal budgetMin;
     private BigDecimal budgetMax;

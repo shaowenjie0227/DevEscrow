@@ -2,6 +2,7 @@ package com.programmer.escrow.demand.service;
 
 import com.programmer.escrow.common.exception.BizException;
 import com.programmer.escrow.demand.dto.DemandCreateDTO;
+import com.programmer.escrow.demand.entity.DemandCategoryEntity;
 import com.programmer.escrow.demand.entity.DemandEntity;
 import com.programmer.escrow.demand.mapper.DemandMapper;
 import com.programmer.escrow.demand.model.DemandFileItem;
@@ -24,16 +25,21 @@ public class DemandServiceImpl implements DemandService {
 
     private final DemandMapper demandMapper;
     private final BizNoGenerator bizNoGenerator;
+    private final DemandCategoryService demandCategoryService;
 
-    public DemandServiceImpl(DemandMapper demandMapper, BizNoGenerator bizNoGenerator) {
+    public DemandServiceImpl(DemandMapper demandMapper,
+                             BizNoGenerator bizNoGenerator,
+                             DemandCategoryService demandCategoryService) {
         this.demandMapper = demandMapper;
         this.bizNoGenerator = bizNoGenerator;
+        this.demandCategoryService = demandCategoryService;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public DemandDetailVO createDemand(Long publisherId, DemandCreateDTO dto) {
         validateDemand(dto);
+        DemandCategoryEntity category = demandCategoryService.getEnabledCategory(dto.getCategoryId());
         DemandPayload payload = buildPayload(dto);
 
         DemandEntity entity = new DemandEntity();
@@ -42,7 +48,8 @@ public class DemandServiceImpl implements DemandService {
         entity.setTitle(dto.getTitle());
         entity.setSummary(dto.getSummary());
         entity.setDetail(dto.getDetail());
-        entity.setCategory(dto.getCategory());
+        entity.setCategoryId(category.getId());
+        entity.setCategory(category.getCategoryName());
         entity.setBudgetMin(dto.getBudgetMin());
         entity.setBudgetMax(dto.getBudgetMax());
         entity.setExpectedDays(dto.getExpectedDays());
@@ -92,6 +99,7 @@ public class DemandServiceImpl implements DemandService {
                 .title(entity.getTitle())
                 .summary(entity.getSummary())
                 .detail(entity.getDetail())
+                .categoryId(entity.getCategoryId())
                 .category(entity.getCategory())
                 .budgetMin(entity.getBudgetMin())
                 .budgetMax(entity.getBudgetMax())
@@ -116,16 +124,19 @@ public class DemandServiceImpl implements DemandService {
         if (!Objects.equals(dto.getDeliveryType(), 1) && !Objects.equals(dto.getDeliveryType(), 2)) {
             throw new BizException(400, "交付类型不合法");
         }
+        if (dto.getCategoryId() == null) {
+            throw new BizException(400, "分类不能为空");
+        }
         if (Objects.equals(dto.getDeliveryType(), 2)) {
             List<DemandStagePlan> stagePlans = safeStagePlans(dto.getStagePlans());
             if (stagePlans.size() < 2) {
-                throw new BizException(400, "多阶段交付至少需要配置两个阶段");
+                throw new BizException(400, "多阶段交付至少需要两个阶段");
             }
             BigDecimal stageTotal = stagePlans.stream()
                     .map(DemandStagePlan::getStageAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             if (stageTotal.compareTo(dto.getBudgetMin()) < 0 || stageTotal.compareTo(dto.getBudgetMax()) > 0) {
-                throw new BizException(400, "阶段结算总额需要落在整体预算区间内");
+                throw new BizException(400, "阶段结算总额需落在整体预算区间内");
             }
         }
     }

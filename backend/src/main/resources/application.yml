@@ -19,6 +19,20 @@ spring:
     default-property-inclusion: non_null
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 1074482770@qq.com
+    password: mcjsoqesxfstiiac
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: true
 
 mybatis:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -30,6 +44,8 @@ mybatis:
 app:
   auth:
     token-expire-seconds: 604800
+  upload:
+    base-dir: uploads
   sequence:
     demand-prefix: DM
     quote-prefix: QT

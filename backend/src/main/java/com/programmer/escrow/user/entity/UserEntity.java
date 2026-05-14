@@ -20,6 +20,13 @@ public class UserEntity {
     private Integer idVerifyStatus;
     private Integer developerStatus;
     private String skillTags;
+    private Integer developerRoleType;
+    private String idCardFrontUrl;
+    private String idCardBackUrl;
+    private String selfieUrl;
+    private Integer skillAuditStatus;
+    private String skillAuditReason;
+    private String developerSkillTagIds;
     private String intro;
     private BigDecimal rating;
     private Integer completedOrderCount;

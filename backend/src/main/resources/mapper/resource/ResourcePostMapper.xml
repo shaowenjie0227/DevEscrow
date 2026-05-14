@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.resource.mapper.ResourcePostMapper">
+
+    <resultMap id="ResourcePostResultMap" type="com.programmer.escrow.resource.entity.ResourcePostEntity">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="intro" property="intro"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="link_url" property="linkUrl"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="status" property="status"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="favorite_count" property="favoriteCount"/>
+        <result column="share_count" property="shareCount"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">id, title, intro, cover_url, link_url, sort_order, status, like_count, favorite_count, share_count, creator_id, created_at, updated_at</sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.resource.entity.ResourcePostEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `resource_post` (title, intro, cover_url, link_url, sort_order, status, like_count, favorite_count, share_count, creator_id, created_at, updated_at)
+        values (#{title}, #{intro}, #{coverUrl}, #{linkUrl}, #{sortOrder}, #{status}, #{likeCount}, #{favoriteCount}, #{shareCount}, #{creatorId}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.programmer.escrow.resource.entity.ResourcePostEntity">
+        update `resource_post`
+        set title = #{title},
+            intro = #{intro},
+            cover_url = #{coverUrl},
+            link_url = #{linkUrl},
+            sort_order = #{sortOrder},
+            updated_at = #{updatedAt}
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `resource_post`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="incrementLike">
+        update `resource_post`
+        set like_count = like_count + 1,
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="incrementFavorite">
+        update `resource_post`
+        set favorite_count = favorite_count + 1,
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="incrementShare">
+        update `resource_post`
+        set share_count = share_count + 1,
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <select id="selectById" resultMap="ResourcePostResultMap">
+        select <include refid="BaseColumns"/> from `resource_post` where id = #{id} limit 1
+    </select>
+
+    <select id="selectActiveList" resultMap="ResourcePostResultMap">
+        select <include refid="BaseColumns"/> from `resource_post` where status = 1 order by sort_order asc, id desc
+    </select>
+
+    <select id="selectAdminList" resultMap="ResourcePostResultMap">
+        select <include refid="BaseColumns"/> from `resource_post` order by sort_order asc, id desc
+    </select>
+</mapper>

@@ -97,6 +97,14 @@ public class AdminQueryServiceImpl implements AdminQueryService {
                 .nickname(entity.getNickname())
                 .userType(entity.getUserType())
                 .developerStatus(entity.getDeveloperStatus())
+                .idVerifyStatus(entity.getIdVerifyStatus())
+                .skillAuditStatus(entity.getSkillAuditStatus())
+                .developerRoleType(entity.getDeveloperRoleType())
+                .skillTags(entity.getSkillTags())
+                .realName(entity.getRealName())
+                .idCardFrontUrl(entity.getIdCardFrontUrl())
+                .idCardBackUrl(entity.getIdCardBackUrl())
+                .selfieUrl(entity.getSelfieUrl())
                 .status(entity.getStatus())
                 .build();
     }
@@ -112,6 +120,7 @@ public class AdminQueryServiceImpl implements AdminQueryService {
                 .title(entity.getTitle())
                 .summary(entity.getSummary())
                 .detail(entity.getDetail())
+                .categoryId(entity.getCategoryId())
                 .category(entity.getCategory())
                 .budgetMin(entity.getBudgetMin())
                 .budgetMax(entity.getBudgetMax())

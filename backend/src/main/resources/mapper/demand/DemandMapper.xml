@@ -11,6 +11,7 @@
         <result column="title" property="title"/>
         <result column="summary" property="summary"/>
         <result column="detail" property="detail"/>
+        <result column="category_id" property="categoryId"/>
         <result column="category" property="category"/>
         <result column="budget_min" property="budgetMin"/>
         <result column="budget_max" property="budgetMax"/>
@@ -30,7 +31,7 @@
     </resultMap>
 
     <sql id="BaseColumns">
-        id, demand_no, publisher_id, title, summary, detail, category, budget_min,
+        id, demand_no, publisher_id, title, summary, detail, category_id, category, budget_min,
         budget_max, expected_days, delivery_type, attachments_json, contact_note,
         quote_count, review_status, status, publish_at, closed_at, reject_reason,
         version, created_at, updated_at
@@ -38,12 +39,12 @@
 
     <insert id="insert" parameterType="com.programmer.escrow.demand.entity.DemandEntity" useGeneratedKeys="true" keyProperty="id">
         insert into `demand` (
-            demand_no, publisher_id, title, summary, detail, category, budget_min,
+            demand_no, publisher_id, title, summary, detail, category_id, category, budget_min,
             budget_max, expected_days, delivery_type, attachments_json, contact_note,
             quote_count, review_status, status, publish_at, closed_at, reject_reason,
             version, created_at, updated_at
         ) values (
-            #{demandNo}, #{publisherId}, #{title}, #{summary}, #{detail}, #{category}, #{budgetMin},
+            #{demandNo}, #{publisherId}, #{title}, #{summary}, #{detail}, #{categoryId}, #{category}, #{budgetMin},
             #{budgetMax}, #{expectedDays}, #{deliveryType}, #{attachmentsJson}, #{contactNote},
             #{quoteCount}, #{reviewStatus}, #{status}, #{publishAt}, #{closedAt}, #{rejectReason},
             #{version}, #{createdAt}, #{updatedAt}
@@ -109,5 +110,12 @@
         set status = #{status},
             updated_at = now()
         where id = #{id}
+    </update>
+
+    <update id="updateCategorySnapshot">
+        update `demand`
+        set category = #{category},
+            updated_at = now()
+        where category_id = #{categoryId}
     </update>
 </mapper>

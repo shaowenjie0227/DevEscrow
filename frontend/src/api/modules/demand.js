@@ -15,3 +15,19 @@ export function fetchDemandQuotes(demandId) {
 export function fetchMarketDemands() {
   return http.get('/api/developer/demands')
 }
+
+export function fetchDemandCategories() {
+  return http.get('/api/demand-categories')
+}
+
+export function fetchHomeBanners() {
+  return http.get('/api/home-banners')
+}
+
+export function fetchKnowledgeBases() {
+  return http.get('/api/knowledge-bases')
+}
+
+export function fetchResources() {
+  return http.get('/api/resources')
+}

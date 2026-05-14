@@ -26,6 +26,11 @@ public class TokenAuthInterceptor implements HandlerInterceptor {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
+        String requestUri = request.getRequestURI();
+        if (requestUri.startsWith("/api/community/") && "GET".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         String token = resolveToken(request);
         if (!StringUtils.hasText(token)) {
             throw new BizException(401, "缺少登录凭证");
@@ -39,7 +44,7 @@ public class TokenAuthInterceptor implements HandlerInterceptor {
             throw new BizException(401, "登录凭证格式无效");
         }
         LoginUser loginUser = new LoginUser(Long.parseLong(parts[0]), Integer.parseInt(parts[1]));
-        validateRouteAccess(request.getRequestURI(), loginUser);
+        validateRouteAccess(requestUri, loginUser);
         UserContextHolder.set(loginUser);
         return true;
     }
@@ -62,7 +67,7 @@ public class TokenAuthInterceptor implements HandlerInterceptor {
             throw new BizException(403, "当前账号无权访问用户端接口");
         }
         if (requestUri.startsWith("/api/developer/") && !loginUser.canAccessDeveloperSide()) {
-            throw new BizException(403, "当前账号无权访问程序员接口");
+            throw new BizException(403, "当前账号无权访问开发者端接口");
         }
         Objects.requireNonNull(loginUser.getUserId(), "userId must not be null");
     }

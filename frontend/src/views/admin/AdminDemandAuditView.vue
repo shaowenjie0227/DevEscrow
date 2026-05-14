@@ -2,12 +2,14 @@
   <section class="page-card">
     <div class="toolbar">
       <h2>需求审核</h2>
-      <el-button @click="loadDemands">刷新</el-button>
+      <div class="toolbar-actions">
+        <el-button @click="loadDemands">刷新</el-button>
+      </div>
     </div>
     <el-table :data="demands" v-loading="loading">
       <el-table-column prop="demandNo" label="需求编号" min-width="180" />
       <el-table-column prop="title" label="需求标题" min-width="220" />
-      <el-table-column prop="category" label="分类" width="140" />
+      <el-table-column prop="category" label="分类" width="180" />
       <el-table-column label="审核状态" width="160">
         <template #default="{ row }">
           <el-tag :type="getDemandReviewStatus(row.reviewStatus).type">
@@ -45,7 +47,7 @@ async function loadDemands() {
   loading.value = true
   try {
     const response = await fetchAdminDemands()
-    demands.value = response.data
+    demands.value = response.data || []
   } catch (error) {
     ElMessage.error(error.message || '加载需求列表失败')
   } finally {

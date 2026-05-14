@@ -23,8 +23,8 @@ public class DemandCreateDTO {
     @NotBlank(message = "详细描述不能为空")
     private String detail;
 
-    @NotBlank(message = "分类不能为空")
-    private String category;
+    @NotNull(message = "分类不能为空")
+    private Long categoryId;
 
     @NotNull(message = "预算下限不能为空")
     @DecimalMin(value = "0.00", message = "预算下限不能小于0")

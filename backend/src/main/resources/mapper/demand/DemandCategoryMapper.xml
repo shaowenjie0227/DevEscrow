@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.demand.mapper.DemandCategoryMapper">
+
+    <resultMap id="DemandCategoryResultMap" type="com.programmer.escrow.demand.entity.DemandCategoryEntity">
+        <id column="id" property="id"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="status" property="status"/>
+        <result column="description" property="description"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, category_name, sort_order, status, description, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.demand.entity.DemandCategoryEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `demand_category` (
+            category_name, sort_order, status, description, created_at, updated_at
+        ) values (
+            #{categoryName}, #{sortOrder}, #{status}, #{description}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="DemandCategoryResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand_category`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByName" resultMap="DemandCategoryResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand_category`
+        where category_name = #{categoryName}
+        limit 1
+    </select>
+
+    <select id="selectActiveList" resultMap="DemandCategoryResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand_category`
+        where status = 1
+        order by sort_order asc, id asc
+    </select>
+
+    <select id="selectAdminList" resultMap="DemandCategoryResultMap">
+        select <include refid="BaseColumns"/>
+        from `demand_category`
+        order by sort_order asc, id asc
+    </select>
+
+    <update id="update" parameterType="com.programmer.escrow.demand.entity.DemandCategoryEntity">
+        update `demand_category`
+        set category_name = #{categoryName},
+            sort_order = #{sortOrder},
+            description = #{description},
+            updated_at = #{updatedAt}
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `demand_category`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

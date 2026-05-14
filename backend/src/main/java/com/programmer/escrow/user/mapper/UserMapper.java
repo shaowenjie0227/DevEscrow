@@ -26,4 +26,8 @@ public interface UserMapper {
     int updateLastLoginAt(@Param("id") Long id);
 
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+
+    int updateDeveloperProfile(UserEntity entity);
+
+    int updateBasicProfile(UserEntity entity);
 }

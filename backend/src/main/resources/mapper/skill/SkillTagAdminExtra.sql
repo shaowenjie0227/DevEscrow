@@ -1,0 +1,26 @@
+-- Placeholder for manual SQL migration:
+-- CREATE TABLE `skill_tag` (
+--   `id` BIGINT NOT NULL AUTO_INCREMENT,
+--   `tag_name` VARCHAR(64) NOT NULL,
+--   `tag_type` VARCHAR(32) NOT NULL DEFAULT 'developer',
+--   `sort_order` INT NOT NULL DEFAULT 0,
+--   `status` TINYINT NOT NULL DEFAULT 1,
+--   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--   PRIMARY KEY (`id`),
+--   UNIQUE KEY `uk_tag_name` (`tag_name`)
+-- );
+--
+-- CREATE TABLE `home_banner` (
+--   `id` BIGINT NOT NULL AUTO_INCREMENT,
+--   `title` VARCHAR(128) NOT NULL,
+--   `subtitle` VARCHAR(255) NOT NULL,
+--   `button_text` VARCHAR(64) DEFAULT NULL,
+--   `target_url` VARCHAR(255) DEFAULT NULL,
+--   `image_url` VARCHAR(255) DEFAULT NULL,
+--   `sort_order` INT NOT NULL DEFAULT 0,
+--   `status` TINYINT NOT NULL DEFAULT 1,
+--   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--   PRIMARY KEY (`id`)
+-- );

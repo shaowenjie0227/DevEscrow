@@ -30,4 +30,6 @@ public interface DemandMapper {
     int incrementQuoteCount(@Param("id") Long id, @Param("status") Integer status);
 
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+
+    int updateCategorySnapshot(@Param("categoryId") Long categoryId, @Param("category") String category);
 }

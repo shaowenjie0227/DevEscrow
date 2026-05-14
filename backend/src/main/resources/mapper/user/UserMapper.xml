@@ -17,6 +17,13 @@
         <result column="id_verify_status" property="idVerifyStatus"/>
         <result column="developer_status" property="developerStatus"/>
         <result column="skill_tags" property="skillTags"/>
+        <result column="developer_role_type" property="developerRoleType"/>
+        <result column="id_card_front_url" property="idCardFrontUrl"/>
+        <result column="id_card_back_url" property="idCardBackUrl"/>
+        <result column="selfie_url" property="selfieUrl"/>
+        <result column="skill_audit_status" property="skillAuditStatus"/>
+        <result column="skill_audit_reason" property="skillAuditReason"/>
+        <result column="developer_skill_tag_ids" property="developerSkillTagIds"/>
         <result column="intro" property="intro"/>
         <result column="rating" property="rating"/>
         <result column="completed_order_count" property="completedOrderCount"/>
@@ -29,18 +36,21 @@
 
     <sql id="BaseColumns">
         id, user_no, phone, email, password_hash, nickname, avatar_url, user_type,
-        real_name, id_verify_status, developer_status, skill_tags, intro, rating,
+        real_name, id_verify_status, developer_status, skill_tags, developer_role_type,
+        id_card_front_url, id_card_back_url, selfie_url, skill_audit_status, skill_audit_reason, developer_skill_tag_ids, intro, rating,
         completed_order_count, status, last_login_at, version, created_at, updated_at
     </sql>
 
     <insert id="insert" parameterType="com.programmer.escrow.user.entity.UserEntity" useGeneratedKeys="true" keyProperty="id">
         insert into `user` (
             user_no, phone, email, password_hash, nickname, avatar_url, user_type,
-            real_name, id_verify_status, developer_status, skill_tags, intro, rating,
+            real_name, id_verify_status, developer_status, skill_tags, developer_role_type,
+            id_card_front_url, id_card_back_url, selfie_url, skill_audit_status, skill_audit_reason, developer_skill_tag_ids, intro, rating,
             completed_order_count, status, last_login_at, version, created_at, updated_at
         ) values (
             #{userNo}, #{phone}, #{email}, #{passwordHash}, #{nickname}, #{avatarUrl}, #{userType},
-            #{realName}, #{idVerifyStatus}, #{developerStatus}, #{skillTags}, #{intro}, #{rating},
+            #{realName}, #{idVerifyStatus}, #{developerStatus}, #{skillTags}, #{developerRoleType},
+            #{idCardFrontUrl}, #{idCardBackUrl}, #{selfieUrl}, #{skillAuditStatus}, #{skillAuditReason}, #{developerSkillTagIds}, #{intro}, #{rating},
             #{completedOrderCount}, #{status}, #{lastLoginAt}, #{version}, #{createdAt}, #{updatedAt}
         )
     </insert>
@@ -107,6 +117,33 @@
     <update id="updateStatus">
         update `user`
         set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateDeveloperProfile" parameterType="com.programmer.escrow.user.entity.UserEntity">
+        update `user`
+        set real_name = #{realName},
+            developer_status = #{developerStatus},
+            id_verify_status = #{idVerifyStatus},
+            skill_tags = #{skillTags},
+            developer_role_type = #{developerRoleType},
+            id_card_front_url = #{idCardFrontUrl},
+            id_card_back_url = #{idCardBackUrl},
+            selfie_url = #{selfieUrl},
+            skill_audit_status = #{skillAuditStatus},
+            skill_audit_reason = #{skillAuditReason},
+            developer_skill_tag_ids = #{developerSkillTagIds},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateBasicProfile" parameterType="com.programmer.escrow.user.entity.UserEntity">
+        update `user`
+        set nickname = #{nickname},
+            phone = #{phone},
+            email = #{email},
+            intro = #{intro},
             updated_at = now()
         where id = #{id}
     </update>

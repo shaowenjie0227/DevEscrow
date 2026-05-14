@@ -21,7 +21,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/register")//地址重导向
+    @PostMapping("/register")
     public ApiResponse<LoginVO> register(@Valid @RequestBody RegisterDTO dto) {
         return ApiResponse.success(authService.register(dto));
     }

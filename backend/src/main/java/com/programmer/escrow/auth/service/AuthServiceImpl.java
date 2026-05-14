@@ -2,10 +2,11 @@ package com.programmer.escrow.auth.service;
 
 import com.programmer.escrow.auth.dto.LoginDTO;
 import com.programmer.escrow.auth.dto.RegisterDTO;
+import com.programmer.escrow.auth.dto.UserProfileUpdateDTO;
 import com.programmer.escrow.auth.vo.LoginVO;
 import com.programmer.escrow.common.exception.BizException;
-import com.programmer.escrow.infra.sequence.BizNoGenerator;
 import com.programmer.escrow.infra.redis.TokenCacheService;
+import com.programmer.escrow.infra.sequence.BizNoGenerator;
 import com.programmer.escrow.user.entity.UserEntity;
 import com.programmer.escrow.user.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,7 +61,9 @@ public class AuthServiceImpl implements AuthService {
         entity.setNickname(dto.getNickname());
         entity.setUserType(dto.getUserType());
         entity.setIdVerifyStatus(0);
-        entity.setDeveloperStatus(dto.getUserType() == 2 || dto.getUserType() == 3 ? 2 : 0);
+        entity.setDeveloperStatus(0);
+        entity.setDeveloperRoleType(0);
+        entity.setSkillAuditStatus(0);
         entity.setRating(BigDecimal.valueOf(5.00));
         entity.setCompletedOrderCount(0);
         entity.setStatus(1);
@@ -68,9 +71,23 @@ public class AuthServiceImpl implements AuthService {
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         userMapper.insert(entity);
-        userMapper.updateLastLoginAt(entity.getId());
 
-        return buildLoginResult(entity);
+        if (dto.getUserType() != null && (dto.getUserType() == 2 || dto.getUserType() == 3)) {
+          UserEntity developerEntity = userMapper.selectById(entity.getId());
+          developerEntity.setRealName(dto.getRealName());
+          developerEntity.setDeveloperRoleType(dto.getDeveloperRoleType());
+          developerEntity.setIdCardFrontUrl(dto.getIdCardFrontUrl());
+          developerEntity.setIdCardBackUrl(dto.getIdCardBackUrl());
+          developerEntity.setSelfieUrl(dto.getSelfieUrl());
+          developerEntity.setDeveloperSkillTagIds(dto.getSkillTagIds() == null ? null : dto.getSkillTagIds().toString());
+          developerEntity.setDeveloperStatus(1);
+          developerEntity.setSkillAuditStatus(1);
+          developerEntity.setIdVerifyStatus(1);
+          userMapper.updateDeveloperProfile(developerEntity);
+        }
+
+        userMapper.updateLastLoginAt(entity.getId());
+        return buildLoginResult(userMapper.selectById(entity.getId()));
     }
 
     @Override
@@ -86,19 +103,42 @@ public class AuthServiceImpl implements AuthService {
         return buildLoginResult(entity);
     }
 
+    @Override
+    public UserEntity getCurrentUser(Long userId) {
+        UserEntity entity = userMapper.selectById(userId);
+        if (entity == null) {
+            throw new BizException(404, "用户不存在");
+        }
+        return entity;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserEntity updateBasicProfile(Long userId, UserProfileUpdateDTO dto) {
+        UserEntity entity = getCurrentUser(userId);
+        entity.setNickname(dto.getNickname());
+        entity.setPhone(dto.getPhone());
+        entity.setEmail(dto.getEmail());
+        entity.setIntro(dto.getIntro());
+        userMapper.updateBasicProfile(entity);
+        return userMapper.selectById(userId);
+    }
+
     private LoginVO buildLoginResult(UserEntity entity) {
         String token = UUID.randomUUID().toString();
-        cacheToken(token, entity);
+        tokenCacheService.storeUserToken(token, entity.getId(), entity.getUserType(), tokenExpireSeconds, entity.getNickname());
         return LoginVO.builder()
                 .token(token)
                 .userId(entity.getId())
                 .nickname(entity.getNickname())
+                .userType(entity.getUserType())
+                .developerStatus(entity.getDeveloperStatus())
+                .idVerifyStatus(entity.getIdVerifyStatus())
+                .skillAuditStatus(entity.getSkillAuditStatus())
+                .developerRoleType(entity.getDeveloperRoleType())
+                .skillTags(entity.getSkillTags())
                 .roles(resolveRoles(entity.getUserType()))
                 .build();
-    }
-
-    private void cacheToken(String token, UserEntity entity) {
-        tokenCacheService.storeUserToken(token, entity.getId(), entity.getUserType(), tokenExpireSeconds, entity.getNickname());
     }
 
     private List<String> resolveRoles(Integer userType) {

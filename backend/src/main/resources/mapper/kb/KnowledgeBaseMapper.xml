@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.kb.mapper.KnowledgeBaseMapper">
+    <resultMap id="KnowledgeBaseResultMap" type="com.programmer.escrow.kb.entity.KnowledgeBaseEntity">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="intro" property="intro"/>
+        <result column="tech_name" property="techName"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="link_url" property="linkUrl"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">id, title, intro, tech_name, cover_url, link_url, sort_order, status, created_at, updated_at</sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.kb.entity.KnowledgeBaseEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `knowledge_base` (title, intro, tech_name, cover_url, link_url, sort_order, status, created_at, updated_at)
+        values (#{title}, #{intro}, #{techName}, #{coverUrl}, #{linkUrl}, #{sortOrder}, #{status}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.programmer.escrow.kb.entity.KnowledgeBaseEntity">
+        update `knowledge_base`
+        set title = #{title},
+            intro = #{intro},
+            tech_name = #{techName},
+            cover_url = #{coverUrl},
+            link_url = #{linkUrl},
+            sort_order = #{sortOrder},
+            updated_at = #{updatedAt}
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `knowledge_base`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <select id="selectById" resultMap="KnowledgeBaseResultMap">
+        select <include refid="BaseColumns"/> from `knowledge_base` where id = #{id} limit 1
+    </select>
+
+    <select id="selectActiveList" resultMap="KnowledgeBaseResultMap">
+        select <include refid="BaseColumns"/> from `knowledge_base` where status = 1 order by sort_order asc, id asc
+    </select>
+
+    <select id="selectAdminList" resultMap="KnowledgeBaseResultMap">
+        select <include refid="BaseColumns"/> from `knowledge_base` order by sort_order asc, id asc
+    </select>
+</mapper>
