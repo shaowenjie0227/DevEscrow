@@ -29,6 +29,11 @@ public class HomeNoticeServiceImpl implements HomeNoticeService {
     }
 
     @Override
+    public HomeNoticeVO getDetail(Long id) {
+        return toVO(getActive(id));
+    }
+
+    @Override
     public List<HomeNoticeVO> listAdmin() {
         return homeNoticeMapper.selectAdminList().stream().map(this::toVO).toList();
     }

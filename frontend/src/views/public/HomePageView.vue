@@ -166,7 +166,7 @@ function handleBannerAction(item: any) {
 }
 
 function handleNoticeAction(item: any) {
-  navigateByUrl(item.targetUrl || '/market')
+  router.push(`/notices/${item.id}`)
 }
 
 onMounted(async () => {
@@ -237,22 +237,36 @@ onMounted(async () => {
 
 <style scoped>
 .home-hero-grid {
+  --home-hero-panel-height: 668px;
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.78fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1.58fr) minmax(360px, 0.82fr);
+  gap: 20px;
   align-items: stretch;
+}
+
+.home-hero-grid__main,
+.home-hero-grid__side {
+  min-height: var(--home-hero-panel-height);
 }
 
 .home-hero-grid__main :deep(.market-container) {
   width: 100%;
+  height: 100%;
 }
 
 .home-hero-grid__main :deep(.market-banner) {
-  margin-top: 14px;
+  margin-top: 12px;
+  height: calc(100% - 12px);
 }
 
 .home-hero-grid__side {
-  padding-top: 14px;
+  padding-top: 12px;
+  min-height: 100%;
+}
+
+.home-hero-grid__side :deep(.home-notice-board) {
+  height: calc(100% - 12px);
+  min-height: 100%;
 }
 
 .market-layout {
@@ -382,10 +396,22 @@ onMounted(async () => {
 @media (max-width: 1180px) {
   .home-hero-grid {
     grid-template-columns: 1fr;
+    --home-hero-panel-height: auto;
   }
 
   .home-hero-grid__side {
     padding-top: 0;
+  }
+
+  .home-hero-grid__main,
+  .home-hero-grid__side {
+    min-height: auto;
+  }
+
+  .home-hero-grid__main :deep(.market-banner),
+  .home-hero-grid__side :deep(.home-notice-board) {
+    min-height: auto;
+    height: auto;
   }
 }
 

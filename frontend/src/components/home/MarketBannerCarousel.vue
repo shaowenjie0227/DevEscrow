@@ -24,6 +24,14 @@ let timer: number | undefined
 const currentItem = computed(() => props.items[currentIndex.value] || props.items[0] || null)
 const displayIndex = computed(() => String(currentIndex.value + 1).padStart(2, '0'))
 const totalCount = computed(() => String(Math.max(props.items.length, 1)).padStart(2, '0'))
+const previewItems = computed(() => {
+  if (!props.items.length) return []
+
+  return props.items
+    .map((item, index) => ({ ...item, index }))
+    .filter((item) => item.index !== currentIndex.value)
+    .slice(0, 2)
+})
 
 function next() {
   if (!props.items.length) return
@@ -69,6 +77,9 @@ onBeforeUnmount(stopAutoPlay)
 <template>
   <section class="market-container">
     <div class="market-banner market-banner--carousel">
+      <div class="market-banner__texture market-banner__texture--top" />
+      <div class="market-banner__texture market-banner__texture--bottom" />
+
       <div class="market-banner__carousel">
         <transition name="fade-slide" mode="out-in">
           <div v-if="currentItem" :key="currentItem.id" class="market-banner__inner market-banner__inner--carousel">
@@ -78,7 +89,8 @@ onBeforeUnmount(stopAutoPlay)
                 <span class="market-bulletin__counter">{{ displayIndex }} / {{ totalCount }}</span>
               </div>
 
-              <div>
+              <div class="market-bulletin__body">
+                <span class="market-bulletin__line">Featured Storyboard</span>
                 <h1 class="market-banner__title">{{ currentItem.title }}</h1>
                 <p class="market-banner__desc">{{ currentItem.subtitle }}</p>
               </div>
@@ -90,8 +102,23 @@ onBeforeUnmount(stopAutoPlay)
                 <button class="market-btn market-btn--ghost" type="button" @click="next">下一条</button>
               </div>
 
+              <div class="market-bulletin__stats">
+                <div class="market-bulletin__stat">
+                  <strong>{{ totalCount }}</strong>
+                  <span>轮播内容</span>
+                </div>
+                <div class="market-bulletin__stat">
+                  <strong>活动 / 公告</strong>
+                  <span>支持独立跳转</span>
+                </div>
+                <div class="market-bulletin__stat">
+                  <strong>后台可配</strong>
+                  <span>图片与文案均可维护</span>
+                </div>
+              </div>
+
               <div class="market-bulletin__note">
-                <span>左侧适合放宣传轮播、平台活动或阶段性重点信息。</span>
+                <span>左侧做主视觉宣传，右侧承接运营内容，首屏信息层级会清晰很多。</span>
               </div>
             </div>
 
@@ -100,9 +127,23 @@ onBeforeUnmount(stopAutoPlay)
                 class="market-banner__visual-image"
                 :style="currentItem.image ? { backgroundImage: `url(${currentItem.image})` } : {}"
               />
-              <div class="market-banner__visual-caption">
-                <strong>轮播预览</strong>
-                <span>支持管理员上传图片、设置文案和跳转链接。</span>
+
+              <div class="market-banner__visual-glass">
+                <span>轮播主卡</span>
+                <strong>{{ currentItem.buttonText || '查看详情' }}</strong>
+              </div>
+
+              <div v-if="previewItems.length" class="market-banner__preview-stack">
+                <button
+                  v-for="item in previewItems"
+                  :key="item.id"
+                  type="button"
+                  class="market-banner__preview-card"
+                  @click="goTo(item.index)"
+                >
+                  <span>{{ String(item.index + 1).padStart(2, '0') }}</span>
+                  <strong>{{ item.title }}</strong>
+                </button>
               </div>
             </div>
           </div>
@@ -132,21 +173,58 @@ onBeforeUnmount(stopAutoPlay)
 
 <style scoped>
 .market-banner--carousel {
-  border-radius: 28px;
-  background: linear-gradient(180deg, rgba(247, 249, 252, 0.96), rgba(255, 255, 255, 0.94));
-  box-shadow: 0 18px 40px rgba(17, 19, 34, 0.06);
+  position: relative;
+  overflow: hidden;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(243, 190, 37, 0.18), transparent 24%),
+    radial-gradient(circle at 88% 84%, rgba(37, 99, 235, 0.1), transparent 24%),
+    linear-gradient(180deg, rgba(248, 250, 255, 0.98), rgba(255, 255, 255, 0.94));
+  box-shadow: 0 22px 48px rgba(17, 19, 34, 0.07);
+}
+
+.market-banner__texture {
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  filter: blur(56px);
+  pointer-events: none;
+}
+
+.market-banner__texture--top {
+  top: -40px;
+  right: 18%;
+  width: 220px;
+  height: 220px;
+  background: rgba(243, 190, 37, 0.14);
+}
+
+.market-banner__texture--bottom {
+  bottom: -70px;
+  left: 52%;
+  width: 220px;
+  height: 220px;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.market-banner__carousel {
+  position: relative;
+  z-index: 1;
+  height: 100%;
 }
 
 .market-banner__inner--carousel {
-  grid-template-columns: minmax(0, 1.02fr) minmax(280px, 360px);
-  gap: 22px;
-  min-height: 320px;
-  padding: 28px 32px 56px;
+  grid-template-columns: minmax(0, 1.04fr) minmax(320px, 380px);
+  gap: 24px;
+  min-height: 100%;
+  height: 100%;
+  padding: 30px 34px 58px;
 }
 
 .market-banner__copy--bulletin {
-  gap: 20px;
-  align-content: center;
+  min-height: 100%;
+  gap: 22px;
+  align-content: start;
 }
 
 .market-bulletin__meta {
@@ -163,14 +241,14 @@ onBeforeUnmount(stopAutoPlay)
   border-radius: 0;
   background: transparent;
   color: rgba(17, 19, 34, 0.56);
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
 }
 
 .market-bulletin__counter {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 32px;
+  padding: 0 12px;
   border-radius: 999px;
   background: rgba(17, 19, 34, 0.06);
   color: rgba(17, 19, 34, 0.64);
@@ -179,86 +257,203 @@ onBeforeUnmount(stopAutoPlay)
   letter-spacing: 0.12em;
 }
 
+.market-bulletin__body {
+  display: grid;
+  gap: 14px;
+}
+
+.market-bulletin__line {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(243, 190, 37, 0.16);
+  color: rgba(17, 19, 34, 0.72);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
 .market-banner__title {
-  max-width: 12ch;
-  font-size: clamp(32px, 3.4vw, 54px);
-  line-height: 0.98;
+  max-width: 10ch;
+  font-size: clamp(38px, 4vw, 64px);
+  line-height: 0.94;
 }
 
 .market-banner__desc {
-  margin-top: 14px;
-  max-width: 52ch;
-  line-height: 1.85;
+  max-width: 54ch;
+  color: rgba(17, 19, 34, 0.66);
+  line-height: 1.9;
+  font-size: 15px;
 }
 
 .market-btn {
-  min-height: 46px;
-  border-radius: 12px;
+  min-height: 48px;
+  border-radius: 14px;
 }
 
 .market-btn--primary {
   background: #111322;
 }
 
+.market-bulletin__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.market-bulletin__stat {
+  display: grid;
+  gap: 6px;
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(17, 19, 34, 0.06);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.market-bulletin__stat strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.market-bulletin__stat span {
+  color: rgba(17, 19, 34, 0.56);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .market-bulletin__note span {
   display: inline-flex;
-  max-width: 44ch;
+  max-width: 50ch;
   align-items: center;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 14px;
   border-left: 3px solid rgba(243, 190, 37, 0.78);
   background: rgba(255, 255, 255, 0.72);
   color: rgba(17, 19, 34, 0.62);
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .market-banner__visual {
   position: relative;
-  min-height: 264px;
+  min-height: 100%;
+  height: 100%;
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 20px 32px rgba(17, 19, 34, 0.08);
 }
 
 .market-banner__visual-image {
-  min-height: 264px;
+  min-height: 100%;
   height: 100%;
   background:
-    linear-gradient(135deg, rgba(17, 19, 34, 0.08), rgba(243, 190, 37, 0.22)),
+    linear-gradient(135deg, rgba(17, 19, 34, 0.1), rgba(243, 190, 37, 0.24)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.9));
   background-position: center;
   background-size: cover;
+  transform: scale(1.01);
 }
 
-.market-banner__visual-caption {
+.market-banner__visual-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(17, 19, 34, 0.02), rgba(17, 19, 34, 0.3)),
+    linear-gradient(135deg, transparent 18%, rgba(255, 255, 255, 0.1));
+}
+
+.market-banner__visual-glass {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  background: rgba(17, 19, 34, 0.5);
+  color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.market-banner__visual-glass span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.market-banner__visual-glass strong {
+  font-size: 15px;
+}
+
+.market-banner__preview-stack {
   position: absolute;
   right: 16px;
   bottom: 16px;
   left: 16px;
   display: grid;
-  gap: 4px;
-  padding: 14px;
-  border-radius: 14px;
-  background: rgba(17, 19, 34, 0.78);
-  color: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
+  gap: 10px;
 }
 
-.market-banner__visual-caption strong {
+.market-banner__preview-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(17, 19, 34, 0.68);
+  color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease;
+}
+
+.market-banner__preview-card:hover {
+  transform: translateY(-1px);
+  background: rgba(17, 19, 34, 0.8);
+}
+
+.market-banner__preview-card span {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.market-banner__preview-card strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
   font-size: 14px;
-}
-
-.market-banner__visual-caption span {
-  font-size: 13px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.45;
 }
 
 .market-banner__dots {
   position: absolute;
-  right: 24px;
-  bottom: 22px;
+  right: 28px;
+  bottom: 24px;
   display: flex;
   gap: 8px;
 }
@@ -272,7 +467,7 @@ onBeforeUnmount(stopAutoPlay)
 }
 
 .market-banner__dot--active {
-  width: 26px;
+  width: 28px;
   background: #111322;
 }
 
@@ -280,10 +475,10 @@ onBeforeUnmount(stopAutoPlay)
   top: auto;
   bottom: 18px;
   transform: none;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border: 1px solid rgba(17, 19, 34, 0.08);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   font-size: 16px;
   font-weight: 700;
 }
@@ -293,13 +488,15 @@ onBeforeUnmount(stopAutoPlay)
 }
 
 .market-banner__arrow--right {
-  left: 62px;
+  left: 64px;
   right: auto;
 }
 
 @media (max-width: 1180px) {
   .market-banner__inner--carousel {
     grid-template-columns: 1fr;
+    min-height: auto;
+    height: auto;
   }
 }
 
@@ -309,9 +506,13 @@ onBeforeUnmount(stopAutoPlay)
     padding: 20px 20px 58px;
   }
 
+  .market-bulletin__stats {
+    grid-template-columns: 1fr;
+  }
+
   .market-banner__visual,
   .market-banner__visual-image {
-    min-height: 220px;
+    min-height: 240px;
   }
 
   .market-banner__dots {
