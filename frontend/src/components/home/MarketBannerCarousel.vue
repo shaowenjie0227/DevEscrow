@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 type BannerItem = {
   id: number
@@ -7,6 +7,7 @@ type BannerItem = {
   subtitle: string
   buttonText: string
   image?: string
+  targetUrl?: string
 }
 
 const props = defineProps<{
@@ -20,7 +21,7 @@ const emit = defineEmits<{
 const currentIndex = ref(0)
 let timer: number | undefined
 
-const currentItem = computed(() => props.items[currentIndex.value] || props.items[0])
+const currentItem = computed(() => props.items[currentIndex.value] || props.items[0] || null)
 const displayIndex = computed(() => String(currentIndex.value + 1).padStart(2, '0'))
 const totalCount = computed(() => String(Math.max(props.items.length, 1)).padStart(2, '0'))
 
@@ -32,6 +33,10 @@ function next() {
 function prev() {
   if (!props.items.length) return
   currentIndex.value = (currentIndex.value - 1 + props.items.length) % props.items.length
+}
+
+function goTo(index: number) {
+  currentIndex.value = index
 }
 
 function startAutoPlay() {
@@ -47,6 +52,16 @@ function stopAutoPlay() {
   }
 }
 
+watch(
+  () => props.items.length,
+  () => {
+    if (currentIndex.value >= props.items.length) {
+      currentIndex.value = 0
+    }
+    startAutoPlay()
+  }
+)
+
 onMounted(startAutoPlay)
 onBeforeUnmount(stopAutoPlay)
 </script>
@@ -59,7 +74,7 @@ onBeforeUnmount(stopAutoPlay)
           <div v-if="currentItem" :key="currentItem.id" class="market-banner__inner market-banner__inner--carousel">
             <div class="market-banner__copy market-banner__copy--bulletin">
               <div class="market-bulletin__meta">
-                <span class="market-kicker">平台公告 / 活动</span>
+                <span class="market-kicker">平台首页轮播</span>
                 <span class="market-bulletin__counter">{{ displayIndex }} / {{ totalCount }}</span>
               </div>
 
@@ -70,30 +85,39 @@ onBeforeUnmount(stopAutoPlay)
 
               <div class="market-banner__cta">
                 <button class="market-btn market-btn--primary" type="button" @click="emit('action', currentItem)">
-                  {{ currentItem.buttonText }}
+                  {{ currentItem.buttonText || '查看详情' }}
                 </button>
                 <button class="market-btn market-btn--ghost" type="button" @click="next">下一条</button>
               </div>
 
               <div class="market-bulletin__note">
-                <span>适合放活动、规则更新和精选案例，不需要夸张视觉，也能很好看。</span>
+                <span>左侧适合放宣传轮播、平台活动或阶段性重点信息。</span>
               </div>
             </div>
 
-            <div class="market-banner__carousel-side">
-              <div class="market-banner__carousel-card">
-                <div
-                  class="market-banner__carousel-image"
-                  :style="currentItem.image ? { backgroundImage: `url(${currentItem.image})` } : {}"
-                />
-                <div class="market-banner__carousel-caption">
-                  <strong>编辑精选</strong>
-                  <span>让公告更像内容卡片，而不是轮播占位图。</span>
-                </div>
+            <div class="market-banner__visual">
+              <div
+                class="market-banner__visual-image"
+                :style="currentItem.image ? { backgroundImage: `url(${currentItem.image})` } : {}"
+              />
+              <div class="market-banner__visual-caption">
+                <strong>轮播预览</strong>
+                <span>支持管理员上传图片、设置文案和跳转链接。</span>
               </div>
             </div>
           </div>
         </transition>
+
+        <div v-if="props.items.length > 1" class="market-banner__dots">
+          <button
+            v-for="(item, index) in props.items"
+            :key="item.id"
+            type="button"
+            class="market-banner__dot"
+            :class="{ 'market-banner__dot--active': index === currentIndex }"
+            @click="goTo(index)"
+          />
+        </div>
 
         <button class="market-banner__arrow market-banner__arrow--left" type="button" @click="prev">
           &lt;
@@ -108,20 +132,21 @@ onBeforeUnmount(stopAutoPlay)
 
 <style scoped>
 .market-banner--carousel {
-  border-radius: 22px;
+  border-radius: 28px;
   background: linear-gradient(180deg, rgba(247, 249, 252, 0.96), rgba(255, 255, 255, 0.94));
   box-shadow: 0 18px 40px rgba(17, 19, 34, 0.06);
 }
 
 .market-banner__inner--carousel {
-  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 420px);
-  gap: 28px;
-  min-height: 280px;
-  padding: 28px 32px;
+  grid-template-columns: minmax(0, 1.02fr) minmax(280px, 360px);
+  gap: 22px;
+  min-height: 320px;
+  padding: 28px 32px 56px;
 }
 
 .market-banner__copy--bulletin {
   gap: 20px;
+  align-content: center;
 }
 
 .market-bulletin__meta {
@@ -155,9 +180,9 @@ onBeforeUnmount(stopAutoPlay)
 }
 
 .market-banner__title {
-  max-width: 13ch;
-  font-size: clamp(30px, 3.2vw, 48px);
-  line-height: 1;
+  max-width: 12ch;
+  font-size: clamp(32px, 3.4vw, 54px);
+  line-height: 0.98;
 }
 
 .market-banner__desc {
@@ -177,28 +202,36 @@ onBeforeUnmount(stopAutoPlay)
 
 .market-bulletin__note span {
   display: inline-flex;
-  max-width: 40ch;
+  max-width: 44ch;
   align-items: center;
   min-height: 42px;
   padding: 0 14px;
   border-left: 3px solid rgba(243, 190, 37, 0.78);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   color: rgba(17, 19, 34, 0.62);
   line-height: 1.7;
 }
 
-.market-banner__carousel-card {
+.market-banner__visual {
   position: relative;
-  min-height: 280px;
-  border-radius: 18px;
-  box-shadow: none;
+  min-height: 264px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
 }
 
-.market-banner__carousel-image {
-  min-height: 280px;
+.market-banner__visual-image {
+  min-height: 264px;
+  height: 100%;
+  background:
+    linear-gradient(135deg, rgba(17, 19, 34, 0.08), rgba(243, 190, 37, 0.22)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.9));
+  background-position: center;
+  background-size: cover;
 }
 
-.market-banner__carousel-caption {
+.market-banner__visual-caption {
   position: absolute;
   right: 16px;
   bottom: 16px;
@@ -212,14 +245,35 @@ onBeforeUnmount(stopAutoPlay)
   backdrop-filter: blur(10px);
 }
 
-.market-banner__carousel-caption strong {
+.market-banner__visual-caption strong {
   font-size: 14px;
 }
 
-.market-banner__carousel-caption span {
+.market-banner__visual-caption span {
   font-size: 13px;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.72);
+}
+
+.market-banner__dots {
+  position: absolute;
+  right: 24px;
+  bottom: 22px;
+  display: flex;
+  gap: 8px;
+}
+
+.market-banner__dot {
+  width: 9px;
+  height: 9px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 19, 34, 0.18);
+}
+
+.market-banner__dot--active {
+  width: 26px;
+  background: #111322;
 }
 
 .market-banner__arrow {
@@ -243,7 +297,7 @@ onBeforeUnmount(stopAutoPlay)
   right: auto;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .market-banner__inner--carousel {
     grid-template-columns: 1fr;
   }
@@ -251,12 +305,17 @@ onBeforeUnmount(stopAutoPlay)
 
 @media (max-width: 720px) {
   .market-banner__inner--carousel {
-    padding: 20px;
+    min-height: auto;
+    padding: 20px 20px 58px;
   }
 
-  .market-banner__carousel-card,
-  .market-banner__carousel-image {
+  .market-banner__visual,
+  .market-banner__visual-image {
     min-height: 220px;
+  }
+
+  .market-banner__dots {
+    right: 20px;
   }
 }
 </style>

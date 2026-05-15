@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS `community_reply`;
 DROP TABLE IF EXISTS `community_post`;
 DROP TABLE IF EXISTS `resource_post`;
 DROP TABLE IF EXISTS `knowledge_base`;
+DROP TABLE IF EXISTS `home_notice`;
 DROP TABLE IF EXISTS `home_banner`;
 DROP TABLE IF EXISTS `skill_tag`;
 DROP TABLE IF EXISTS `demand_category`;
@@ -120,6 +121,20 @@ CREATE TABLE `home_banner` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='首页轮播表';
+
+CREATE TABLE `home_notice` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `notice_type` TINYINT NOT NULL DEFAULT 1 COMMENT '1公告 2活动',
+  `title` VARCHAR(128) NOT NULL COMMENT '标题',
+  `summary` VARCHAR(255) NOT NULL COMMENT '摘要',
+  `target_url` VARCHAR(255) DEFAULT NULL COMMENT '跳转地址',
+  `cover_url` VARCHAR(255) DEFAULT NULL COMMENT '封面图地址',
+  `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序值',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 2停用',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='首页公告活动表';
 
 CREATE TABLE `knowledge_base` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -394,6 +409,11 @@ INSERT INTO `skill_tag` (`tag_name`, `tag_type`, `sort_order`, `status`) VALUES
 INSERT INTO `home_banner` (`title`, `subtitle`, `button_text`, `target_url`, `image_url`, `sort_order`, `status`) VALUES
 ('先开发 Demo，满意再合作', '发布真实需求，快速找到能接单的程序员。', '立即发布', '/publish', NULL, 10, 1),
 ('实名审核开发者，接单更安心', '开发者通过资料审核后才能报价接单，降低合作风险。', '查看需求', '/market', NULL, 20, 1);
+
+INSERT INTO `home_notice` (`notice_type`, `title`, `summary`, `target_url`, `cover_url`, `sort_order`, `status`) VALUES
+(1, '平台规则更新说明', '报价前请先完善交付范围、阶段目标与验收方式，减少来回确认成本。', '/publish', NULL, 10, 1),
+(2, '五月需求撮合活动', '完成实名认证和技能审核的开发者，可优先展示在活动推荐位。', '/market', NULL, 20, 1),
+(1, '管理员可维护首页内容', '轮播图与右侧公告活动都支持在后台独立新增、编辑、上下线。', '/admin/banners', NULL, 30, 1);
 
 INSERT INTO `knowledge_base` (`title`, `intro`, `tech_name`, `cover_url`, `link_url`, `sort_order`, `status`) VALUES
 ('Vue3 能做什么', '适合后台、官网、活动页和中小型产品前端。', 'Vue3', NULL, NULL, 10, 1),

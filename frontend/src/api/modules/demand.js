@@ -32,6 +32,10 @@ export function fetchHomeBanners() {
   return http.get('/api/home-banners')
 }
 
+export function fetchHomeNotices() {
+  return http.get('/api/home-notices')
+}
+
 export function fetchKnowledgeBases() {
   return http.get('/api/knowledge-bases')
 }

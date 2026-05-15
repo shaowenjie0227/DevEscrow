@@ -9,8 +9,7 @@ import TopNav from '@/components/home/TopNav.vue'
 import { fetchDemandCategories, fetchPublicMarketDemands } from '@/api/modules/demand'
 import { normalizeMarketDemand } from '@/utils/market'
 
-const COLUMN_SIZE = 10
-const PAGE_SIZE = COLUMN_SIZE * 2
+const PAGE_SIZE = 10
 
 const route = useRoute()
 const router = useRouter()
@@ -151,8 +150,6 @@ const filteredDemands = computed(() =>
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredDemands.value.length / PAGE_SIZE)))
 const pageStart = computed(() => (currentPage.value - 1) * PAGE_SIZE)
 const pageDemands = computed(() => filteredDemands.value.slice(pageStart.value, pageStart.value + PAGE_SIZE))
-const leftColumnDemands = computed(() => pageDemands.value.slice(0, COLUMN_SIZE))
-const rightColumnDemands = computed(() => pageDemands.value.slice(COLUMN_SIZE, PAGE_SIZE))
 
 const resultRangeText = computed(() => {
   if (!filteredDemands.value.length) return '0 / 0'
@@ -161,24 +158,6 @@ const resultRangeText = computed(() => {
   const end = Math.min(pageStart.value + PAGE_SIZE, filteredDemands.value.length)
   return `${start}-${end} / ${filteredDemands.value.length}`
 })
-
-const summaryCards = computed(() => [
-  {
-    label: '公开订单',
-    value: String(demands.value.length).padStart(2, '0'),
-    note: '默认按最新需求优先展示'
-  },
-  {
-    label: '有效分类',
-    value: String(categoryOptions.value.filter((item) => item.count > 0).length).padStart(2, '0'),
-    note: '分类筛选已支持下拉多选'
-  },
-  {
-    label: '当前匹配',
-    value: String(filteredDemands.value.length).padStart(2, '0'),
-    note: `${activeCategoryLabel.value}${normalizedKeyword.value ? ' + 关键词搜索' : ''}`
-  }
-])
 
 const hasActiveFilters = computed(() => Boolean(keyword.value.trim()) || selectedCategoryIds.value.length > 0)
 
@@ -257,31 +236,12 @@ onMounted(loadMarketData)
     <TopNav />
 
     <main class="market-container market-hall">
-      <section class="market-hall__hero">
-        <div class="market-hall__hero-copy">
-          <span class="market-hall__eyebrow">Market Hall</span>
-          <h1>接单大厅</h1>
-          <p>
-            进入大厅后先用关键词和分类筛选，再看下面的分页需求订单。
-            现在分类已经改成下拉框，并且支持多选，适合同时查看多个赛道的需求。
-          </p>
-        </div>
-
-        <div class="market-hall__stats">
-          <article v-for="item in summaryCards" :key="item.label" class="market-hall__stat">
-            <span>{{ item.label }}</span>
-            <strong>{{ item.value }}</strong>
-            <p>{{ item.note }}</p>
-          </article>
-        </div>
-      </section>
-
       <section class="market-feed-card market-hall__filters">
         <div class="market-hall__filters-top">
-          <div>
-            <span class="market-feed-head__eyebrow">Search & Categories</span>
-            <h2>先筛选，再接单</h2>
-            <p>关键词搜索和分类下拉可以一起使用，分类支持多选，刷新后会保留当前筛选状态。</p>
+          <div class="market-hall__filters-copy">
+            <span class="market-feed-head__eyebrow">Demand Filters</span>
+            <h1>接单大厅</h1>
+            <p>先筛选，再看下面的分页需求订单。关键词和分类可以一起使用，刷新后会保留当前筛选状态。</p>
           </div>
 
           <button
@@ -338,7 +298,8 @@ onMounted(loadMarketData)
         </div>
 
         <p class="market-hall__filter-note">
-          未选择分类时默认查看全部分类；下拉框支持多选、搜索和清空。
+          当前共有 {{ demands.length }} 条公开需求，覆盖 {{ categoryOptions.filter((item) => item.count > 0).length }} 个有效分类；
+          未选择分类时默认查看全部分类。
         </p>
       </section>
 
@@ -385,32 +346,15 @@ onMounted(loadMarketData)
           </article>
         </div>
 
-        <div v-else-if="pageDemands.length" class="market-hall__columns">
-          <section class="market-hall__column">
-            <div class="market-hall__column-head">
-              <strong>左栏需求</strong>
-              <span>{{ leftColumnDemands.length }} / {{ COLUMN_SIZE }}</span>
-            </div>
+        <div v-else-if="pageDemands.length" class="market-hall__stack">
+          <div class="market-hall__list-head">
+            <strong>当前页需求</strong>
+            <span>{{ pageDemands.length }} / {{ PAGE_SIZE }}</span>
+          </div>
 
-            <div class="market-list market-hall__column-list">
-              <DemandCard v-for="item in leftColumnDemands" :key="item.id" :item="item" />
-            </div>
-          </section>
-
-          <section class="market-hall__column">
-            <div class="market-hall__column-head">
-              <strong>右栏需求</strong>
-              <span>{{ rightColumnDemands.length }} / {{ COLUMN_SIZE }}</span>
-            </div>
-
-            <div v-if="rightColumnDemands.length" class="market-list market-hall__column-list">
-              <DemandCard v-for="item in rightColumnDemands" :key="item.id" :item="item" />
-            </div>
-
-            <div v-else class="market-hall__column-empty">
-              当前页右栏暂无更多需求
-            </div>
-          </section>
+          <div class="market-list market-list--compact market-hall__list">
+            <DemandCard v-for="item in pageDemands" :key="item.id" :item="item" compact />
+          </div>
         </div>
 
         <div v-else class="market-hall__empty">
@@ -420,7 +364,7 @@ onMounted(loadMarketData)
         </div>
 
         <div v-if="filteredDemands.length > PAGE_SIZE" class="market-hall__pagination">
-          <p>每页固定 20 条需求订单，左右两栏各展示 10 条，切页时保留当前搜索词和多选分类。</p>
+          <p>每页固定展示 10 条需求订单，切页时会保留当前关键词和分类筛选。</p>
           <el-pagination
             background
             layout="prev, pager, next"
@@ -440,100 +384,8 @@ onMounted(loadMarketData)
 <style scoped>
 .market-hall {
   display: grid;
-  gap: 22px;
+  gap: 18px;
   padding: 20px 0 34px;
-}
-
-.market-hall__hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
-  gap: 22px;
-  align-items: stretch;
-}
-
-.market-hall__hero-copy,
-.market-hall__stat {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.76);
-  border-radius: 30px;
-  background: var(--market-card);
-  box-shadow: var(--market-shadow);
-  backdrop-filter: blur(18px);
-}
-
-.market-hall__hero-copy::before,
-.market-hall__stat::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.82), rgba(17, 19, 34, 0.16), rgba(255, 255, 255, 0));
-}
-
-.market-hall__hero-copy {
-  padding: 28px;
-  background:
-    radial-gradient(circle at top right, rgba(243, 190, 37, 0.22), transparent 28%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.76));
-}
-
-.market-hall__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(17, 19, 34, 0.06);
-  color: rgba(17, 19, 34, 0.58);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.market-hall__hero-copy h1 {
-  margin-top: 18px;
-  font: 700 clamp(34px, 4vw, 54px) / 0.96 var(--font-display);
-  letter-spacing: -0.05em;
-}
-
-.market-hall__hero-copy p {
-  max-width: 56ch;
-  margin-top: 16px;
-  color: rgba(17, 19, 34, 0.66);
-  font-size: 15px;
-  line-height: 1.9;
-}
-
-.market-hall__stats {
-  display: grid;
-  gap: 14px;
-}
-
-.market-hall__stat {
-  padding: 20px 22px;
-  background: rgba(255, 255, 255, 0.86);
-}
-
-.market-hall__stat span {
-  color: rgba(17, 19, 34, 0.52);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.market-hall__stat strong {
-  display: block;
-  margin-top: 10px;
-  font: 700 34px / 1 var(--font-display);
-  letter-spacing: -0.04em;
-}
-
-.market-hall__stat p {
-  margin-top: 10px;
-  color: rgba(17, 19, 34, 0.62);
-  font-size: 14px;
-  line-height: 1.7;
 }
 
 .market-hall__filters,
@@ -549,14 +401,20 @@ onMounted(loadMarketData)
   align-items: flex-start;
 }
 
-.market-hall__filters-top h2 {
+.market-hall__filters-copy {
+  max-width: 64ch;
+}
+
+.market-hall__filters-top h1 {
   margin-top: 10px;
-  font: 700 30px / 1.04 var(--font-display);
+  font: 700 clamp(32px, 4vw, 48px) / 0.98 var(--font-display);
+  letter-spacing: -0.05em;
 }
 
 .market-hall__filters-top p {
   margin-top: 10px;
   color: rgba(17, 19, 34, 0.6);
+  font-size: 15px;
   line-height: 1.8;
 }
 
@@ -635,14 +493,14 @@ onMounted(loadMarketData)
 
 .market-hall__skeleton-grid {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
   align-items: stretch;
 }
 
 .market-hall__skeleton-media {
   width: 100%;
-  height: 220px;
+  height: 156px;
   border-radius: 22px;
 }
 
@@ -652,19 +510,12 @@ onMounted(loadMarketData)
   align-content: center;
 }
 
-.market-hall__columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.market-hall__column {
+.market-hall__stack {
   display: grid;
   gap: 14px;
-  align-content: start;
 }
 
-.market-hall__column-head {
+.market-hall__list-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -675,27 +526,46 @@ onMounted(loadMarketData)
   background: rgba(255, 255, 255, 0.84);
 }
 
-.market-hall__column-head strong {
+.market-hall__list-head strong {
   font-size: 16px;
 }
 
-.market-hall__column-head span {
+.market-hall__list-head span {
   color: rgba(17, 19, 34, 0.56);
   font-size: 13px;
   font-weight: 700;
 }
 
-.market-hall__column-list {
+.market-hall__list {
   align-content: start;
 }
 
-.market-hall__column-empty {
-  padding: 24px 18px;
-  border: 1px dashed rgba(17, 19, 34, 0.14);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.72);
-  color: rgba(17, 19, 34, 0.56);
-  line-height: 1.8;
+.market-hall__list :deep(.demand-card--compact) {
+  grid-template-columns: 176px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.market-hall__list :deep(.demand-card--compact .demand-card__media) {
+  min-height: 112px;
+}
+
+.market-hall__list :deep(.demand-card--compact .demand-card__body) {
+  gap: 6px;
+}
+
+.market-hall__list :deep(.demand-card--compact .demand-card__summary) {
+  -webkit-line-clamp: 2;
+}
+
+.market-hall__list :deep(.demand-card--compact .demand-card__facts) {
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.market-hall__list :deep(.demand-card--compact .demand-card__pills) {
+  display: none;
 }
 
 .market-hall__empty {
@@ -726,13 +596,6 @@ onMounted(loadMarketData)
   border-top: 1px solid rgba(17, 19, 34, 0.08);
 }
 
-@media (max-width: 1180px) {
-  .market-hall__hero,
-  .market-hall__columns {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 920px) {
   .market-hall__search-row {
     grid-template-columns: 1fr;
@@ -760,18 +623,18 @@ onMounted(loadMarketData)
     padding: 16px 0 28px;
   }
 
-  .market-hall__hero-copy,
   .market-hall__filters,
   .market-hall__board {
     padding: 18px;
   }
 
-  .market-hall__skeleton-grid {
+  .market-hall__skeleton-grid,
+  .market-hall__list :deep(.demand-card--compact) {
     grid-template-columns: 1fr;
   }
 
   .market-hall__skeleton-media {
-    height: 180px;
+    height: 160px;
   }
 }
 </style>

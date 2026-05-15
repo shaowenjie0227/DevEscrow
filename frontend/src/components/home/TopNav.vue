@@ -122,10 +122,10 @@ async function handlePersonalCommand(command: string) {
             </span>
           </button>
 
-          <span class="market-nav__pill">
+          <!-- <span class="market-nav__pill">
             <span class="market-nav__pill-dot" />
-            Escrow First
-          </span>
+            Escrow First -->
+          <!-- </span> -->
         </div>
 
         <nav class="market-nav__links" aria-label="主导航">
@@ -146,18 +146,18 @@ async function handlePersonalCommand(command: string) {
             <el-icon><Plus /></el-icon>
             发布需求
           </button>
-          <button class="market-nav__action" type="button" @click="goTo('/market')">接单大厅</button>
-          <button class="market-nav__action" type="button" @click="goTo('/admin')">
+          <!-- <button class="market-nav__action" type="button" @click="goTo('/market')">接单大厅</button> -->
+          <!-- <button class="market-nav__action" type="button" @click="goTo('/admin')">
             <el-icon><Setting /></el-icon>
             后台管理
-          </button>
+          </button> -->
         </div>
 
         <div class="market-nav__user">
-          <button class="market-nav__user-btn" type="button" @click="handleOrderAction">
+          <!-- <button class="market-nav__user-btn" type="button" @click="handleOrderAction">
             <el-icon><Document /></el-icon>
             <span>订单</span>
-          </button>
+          </button> -->
 
           <el-dropdown trigger="click" @command="handlePersonalCommand">
             <button class="market-nav__user-btn market-nav__user-btn--profile" type="button">

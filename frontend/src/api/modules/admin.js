@@ -80,6 +80,26 @@ export function deleteAdminBanner(bannerId) {
   return http.delete(`/api/admin/banners/${bannerId}`)
 }
 
+export function fetchAdminHomeNotices(params) {
+  return http.get('/api/admin/home-notices', { params })
+}
+
+export function createAdminHomeNotice(data) {
+  return http.post('/api/admin/home-notices', data)
+}
+
+export function updateAdminHomeNotice(noticeId, data) {
+  return http.put(`/api/admin/home-notices/${noticeId}`, data)
+}
+
+export function toggleAdminHomeNoticeStatus(noticeId, data) {
+  return http.post(`/api/admin/home-notices/${noticeId}/status`, data)
+}
+
+export function deleteAdminHomeNotice(noticeId) {
+  return http.delete(`/api/admin/home-notices/${noticeId}`)
+}
+
 export function fetchAdminSkillTags() {
   return http.get('/api/admin/skill-tags')
 }
