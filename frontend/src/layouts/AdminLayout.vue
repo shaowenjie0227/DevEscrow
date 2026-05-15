@@ -4,7 +4,6 @@
     badge="AD"
     eyebrow="Operations Console"
     title="平台运营后台"
-    subtitle="统一处理轮播、资源、分类、需求审核、用户与订单等运营工作。"
     :nav-items="navItems"
     :account-name="accountName"
     account-meta="平台运营控制台"

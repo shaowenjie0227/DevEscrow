@@ -8,12 +8,19 @@ import lombok.Data;
 public class HomeNoticeSaveDTO {
     @NotNull(message = "内容类型不能为空")
     private Integer noticeType;
+
     @NotBlank(message = "标题不能为空")
     private String title;
+
     @NotBlank(message = "摘要不能为空")
     private String summary;
+
     private String targetUrl;
     private String coverUrl;
+
+    @NotNull(message = "置顶状态不能为空")
+    private Integer isPinned;
+
     @NotNull(message = "排序值不能为空")
     private Integer sortOrder;
 }

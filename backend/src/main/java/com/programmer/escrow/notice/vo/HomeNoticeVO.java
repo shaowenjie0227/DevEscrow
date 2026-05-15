@@ -13,6 +13,7 @@ public class HomeNoticeVO {
     private String summary;
     private String targetUrl;
     private String coverUrl;
+    private Integer isPinned;
     private Integer sortOrder;
     private Integer status;
 }

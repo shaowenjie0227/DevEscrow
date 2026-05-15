@@ -26,6 +26,7 @@ public class DemandDetailVO {
     private Integer quoteCount;
     private Integer reviewStatus;
     private Integer status;
+    private String rejectReason;
     private String coverImage;
     private List<DemandFileItem> images;
     private List<DemandFileItem> attachments;

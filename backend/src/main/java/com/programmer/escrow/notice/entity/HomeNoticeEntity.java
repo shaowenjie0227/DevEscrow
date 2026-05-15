@@ -12,6 +12,7 @@ public class HomeNoticeEntity {
     private String summary;
     private String targetUrl;
     private String coverUrl;
+    private Integer isPinned;
     private Integer sortOrder;
     private Integer status;
     private LocalDateTime createdAt;

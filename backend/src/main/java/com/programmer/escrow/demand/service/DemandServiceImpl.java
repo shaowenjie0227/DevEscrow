@@ -108,6 +108,7 @@ public class DemandServiceImpl implements DemandService {
                 .quoteCount(entity.getQuoteCount())
                 .reviewStatus(entity.getReviewStatus())
                 .status(entity.getStatus())
+                .rejectReason(entity.getRejectReason())
                 .coverImage(images.isEmpty() ? null : images.get(0).getUrl())
                 .images(images)
                 .attachments(attachments)

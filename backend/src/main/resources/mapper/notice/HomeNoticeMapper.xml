@@ -10,17 +10,18 @@
         <result column="summary" property="summary"/>
         <result column="target_url" property="targetUrl"/>
         <result column="cover_url" property="coverUrl"/>
+        <result column="is_pinned" property="isPinned"/>
         <result column="sort_order" property="sortOrder"/>
         <result column="status" property="status"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
 
-    <sql id="BaseColumns">id, notice_type, title, summary, target_url, cover_url, sort_order, status, created_at, updated_at</sql>
+    <sql id="BaseColumns">id, notice_type, title, summary, target_url, cover_url, is_pinned, sort_order, status, created_at, updated_at</sql>
 
     <insert id="insert" parameterType="com.programmer.escrow.notice.entity.HomeNoticeEntity" useGeneratedKeys="true" keyProperty="id">
-        insert into `home_notice` (notice_type, title, summary, target_url, cover_url, sort_order, status, created_at, updated_at)
-        values (#{noticeType}, #{title}, #{summary}, #{targetUrl}, #{coverUrl}, #{sortOrder}, #{status}, #{createdAt}, #{updatedAt})
+        insert into `home_notice` (notice_type, title, summary, target_url, cover_url, is_pinned, sort_order, status, created_at, updated_at)
+        values (#{noticeType}, #{title}, #{summary}, #{targetUrl}, #{coverUrl}, #{isPinned}, #{sortOrder}, #{status}, #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update" parameterType="com.programmer.escrow.notice.entity.HomeNoticeEntity">
@@ -30,6 +31,7 @@
             summary = #{summary},
             target_url = #{targetUrl},
             cover_url = #{coverUrl},
+            is_pinned = #{isPinned},
             sort_order = #{sortOrder},
             updated_at = #{updatedAt}
         where id = #{id}
@@ -52,10 +54,10 @@
     </select>
 
     <select id="selectActiveList" resultMap="HomeNoticeResultMap">
-        select <include refid="BaseColumns"/> from `home_notice` where status = 1 order by sort_order asc, id asc
+        select <include refid="BaseColumns"/> from `home_notice` where status = 1 order by is_pinned desc, sort_order asc, id asc
     </select>
 
     <select id="selectAdminList" resultMap="HomeNoticeResultMap">
-        select <include refid="BaseColumns"/> from `home_notice` order by sort_order asc, id asc
+        select <include refid="BaseColumns"/> from `home_notice` order by is_pinned desc, sort_order asc, id asc
     </select>
 </mapper>

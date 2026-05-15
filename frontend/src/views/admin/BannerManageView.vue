@@ -60,6 +60,11 @@
             <el-tag :type="row.noticeType === 2 ? 'warning' : 'primary'">{{ row.typeLabel || (row.noticeType === 2 ? '活动' : '公告') }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="置顶" width="100">
+          <template #default="{ row }">
+            <el-tag :type="Number(row.isPinned) === 1 ? 'danger' : 'info'">{{ Number(row.isPinned) === 1 ? '已置顶' : '普通' }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="220" />
         <el-table-column prop="summary" label="摘要" min-width="340" />
         <el-table-column label="封面" width="130">
@@ -146,6 +151,10 @@
         <el-form-item label="封面图片">
           <ImageUploadField v-model="noticeForm.coverUrl" hint="可选。上传后会在右侧卡片顶部显示封面图。" />
         </el-form-item>
+        <el-form-item label="首页置顶">
+          <el-switch v-model="noticeForm.isPinned" :active-value="1" :inactive-value="0" />
+          <div class="form-hint">开启后会优先占用首页“全部”标签下的顶部展示位。</div>
+        </el-form-item>
         <el-form-item label="排序值">
           <el-input-number v-model="noticeForm.sortOrder" :min="0" :max="9999" style="width: 100%" />
         </el-form-item>
@@ -204,6 +213,7 @@ const noticeForm = reactive({
   summary: '',
   targetUrl: '',
   coverUrl: '',
+  isPinned: 0,
   sortOrder: 0
 })
 
@@ -247,6 +257,7 @@ function resetNoticeForm() {
   noticeForm.summary = ''
   noticeForm.targetUrl = ''
   noticeForm.coverUrl = ''
+  noticeForm.isPinned = 0
   noticeForm.sortOrder = 0
   editingNoticeId.value = null
 }
@@ -283,6 +294,7 @@ function editNotice(row) {
   noticeForm.summary = row.summary
   noticeForm.targetUrl = row.targetUrl || ''
   noticeForm.coverUrl = row.coverUrl || ''
+  noticeForm.isPinned = Number(row.isPinned) === 1 ? 1 : 0
   noticeForm.sortOrder = row.sortOrder
   noticeDialogVisible.value = true
 }
@@ -422,6 +434,13 @@ onMounted(async () => {
   height: 56px;
   border-radius: 12px;
   object-fit: cover;
+}
+
+.form-hint {
+  margin-top: 8px;
+  color: rgba(71, 85, 105, 0.9);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 @media (max-width: 900px) {

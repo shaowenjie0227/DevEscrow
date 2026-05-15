@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface HomeNoticeService {
     List<HomeNoticeVO> listActive();
+    HomeNoticeVO getDetail(Long id);
     List<HomeNoticeVO> listAdmin();
     HomeNoticeVO create(HomeNoticeSaveDTO dto);
     HomeNoticeVO update(Long id, HomeNoticeSaveDTO dto);

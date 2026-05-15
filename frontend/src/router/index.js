@@ -3,6 +3,7 @@ import ClientLayout from '@/layouts/ClientLayout.vue'
 import DeveloperLayout from '@/layouts/DeveloperLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import HomePageView from '@/views/public/HomePageView.vue'
+import HomeNoticeDetailView from '@/views/public/HomeNoticeDetailView.vue'
 import MarketView from '@/views/public/MarketView.vue'
 import PublishEntryView from '@/views/public/PublishEntryView.vue'
 import AdminEntryView from '@/views/public/AdminEntryView.vue'
@@ -51,6 +52,7 @@ const routes = [
       compact: true
     }
   },
+  { path: '/notices/:id', component: HomeNoticeDetailView },
   { path: '/market', component: MarketView },
   { path: '/market/demand/:id', component: DemandDetailView },
   { path: '/publish', component: PublishEntryView },

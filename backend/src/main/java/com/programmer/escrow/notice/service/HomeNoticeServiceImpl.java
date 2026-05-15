@@ -29,6 +29,11 @@ public class HomeNoticeServiceImpl implements HomeNoticeService {
     }
 
     @Override
+    public HomeNoticeVO getDetail(Long id) {
+        return toVO(getActive(id));
+    }
+
+    @Override
     public List<HomeNoticeVO> listAdmin() {
         return homeNoticeMapper.selectAdminList().stream().map(this::toVO).toList();
     }
@@ -43,6 +48,7 @@ public class HomeNoticeServiceImpl implements HomeNoticeService {
         entity.setSummary(dto.getSummary().trim());
         entity.setTargetUrl(dto.getTargetUrl());
         entity.setCoverUrl(dto.getCoverUrl());
+        entity.setIsPinned(normalizePinned(dto.getIsPinned()));
         entity.setSortOrder(dto.getSortOrder());
         entity.setStatus(1);
         entity.setCreatedAt(LocalDateTime.now());
@@ -61,6 +67,7 @@ public class HomeNoticeServiceImpl implements HomeNoticeService {
         entity.setSummary(dto.getSummary().trim());
         entity.setTargetUrl(dto.getTargetUrl());
         entity.setCoverUrl(dto.getCoverUrl());
+        entity.setIsPinned(normalizePinned(dto.getIsPinned()));
         entity.setSortOrder(dto.getSortOrder());
         entity.setUpdatedAt(LocalDateTime.now());
         homeNoticeMapper.update(entity);
@@ -117,6 +124,10 @@ public class HomeNoticeServiceImpl implements HomeNoticeService {
         }
     }
 
+    private Integer normalizePinned(Integer isPinned) {
+        return Objects.equals(isPinned, 1) ? 1 : 0;
+    }
+
     private HomeNoticeVO toVO(HomeNoticeEntity entity) {
         return HomeNoticeVO.builder()
                 .id(entity.getId())
@@ -126,6 +137,7 @@ public class HomeNoticeServiceImpl implements HomeNoticeService {
                 .summary(entity.getSummary())
                 .targetUrl(entity.getTargetUrl())
                 .coverUrl(entity.getCoverUrl())
+                .isPinned(entity.getIsPinned())
                 .sortOrder(entity.getSortOrder())
                 .status(entity.getStatus())
                 .build();

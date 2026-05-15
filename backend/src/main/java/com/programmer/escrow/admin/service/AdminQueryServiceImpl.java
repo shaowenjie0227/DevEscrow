@@ -131,6 +131,7 @@ public class AdminQueryServiceImpl implements AdminQueryService {
                 .deliveryType(entity.getDeliveryType())
                 .reviewStatus(entity.getReviewStatus())
                 .status(entity.getStatus())
+                .rejectReason(entity.getRejectReason())
                 .coverImage(images.isEmpty() ? null : images.get(0).getUrl())
                 .images(images)
                 .attachments(attachments)

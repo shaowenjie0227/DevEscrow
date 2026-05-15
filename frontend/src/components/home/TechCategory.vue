@@ -26,7 +26,7 @@ defineProps<{
 
 <style scoped>
 .market-subnav--taxonomy {
-  padding-top: 18px;
+  padding-top: 0;
 }
 
 .market-taxonomy {
