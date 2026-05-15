@@ -81,6 +81,18 @@ public class HomeBannerServiceImpl implements HomeBannerService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AdminOperationVO delete(Long bannerId) {
+        getBannerOrThrow(bannerId);
+        homeBannerMapper.deleteById(bannerId);
+        return AdminOperationVO.builder()
+                .targetId(bannerId)
+                .status(0)
+                .message("轮播已删除")
+                .build();
+    }
+
+    @Override
     public HomeBannerEntity getActiveBanner(Long bannerId) {
         HomeBannerEntity entity = getBannerOrThrow(bannerId);
         if (!Objects.equals(entity.getStatus(), 1)) {

@@ -31,6 +31,16 @@
             updated_at = now()
         where id = #{id}
     </update>
+    <delete id="deleteById">
+        delete from `skill_tag`
+        where id = #{id}
+    </delete>
+    <select id="countReferencedUsers" resultType="int">
+        select count(1)
+        from `user`
+        where developer_skill_tag_ids is not null
+          and replace(developer_skill_tag_ids, ' ', '') regexp concat('(^|\\[|,)', #{id}, '(,|\\]|$)')
+    </select>
     <select id="selectById" resultMap="SkillTagResultMap">
         select <include refid="BaseColumns"/> from `skill_tag` where id = #{id} limit 1
     </select>

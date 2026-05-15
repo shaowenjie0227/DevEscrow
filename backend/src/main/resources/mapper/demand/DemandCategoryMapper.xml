@@ -68,4 +68,9 @@
             updated_at = now()
         where id = #{id}
     </update>
+
+    <delete id="deleteById">
+        delete from `demand_category`
+        where id = #{id}
+    </delete>
 </mapper>

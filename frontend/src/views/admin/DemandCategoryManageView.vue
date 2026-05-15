@@ -17,17 +17,25 @@
           <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="editCategory(row)">编辑</el-button>
-          <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
-            {{ row.status === 1 ? '停用' : '启用' }}
-          </el-button>
+          <div class="table-row-actions">
+            <el-button size="small" @click="editCategory(row)">编辑</el-button>
+            <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
+              {{ row.status === 1 ? '停用' : '启用' }}
+            </el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建分类' : '编辑分类'" width="560px">
+    <el-dialog
+      v-model="dialogVisible"
+      append-to-body
+      :title="dialogMode === 'create' ? '新建分类' : '编辑分类'"
+      width="560px"
+    >
       <el-form :model="form" label-position="top">
         <el-form-item label="分类名称">
           <el-input v-model="form.categoryName" placeholder="例如：Java 后端" />
@@ -51,9 +59,10 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   createAdminDemandCategory,
+  deleteAdminDemandCategory,
   fetchAdminDemandCategories,
   toggleAdminDemandCategoryStatus,
   updateAdminDemandCategory
@@ -121,7 +130,7 @@ async function submitForm() {
       ElMessage.success('分类保存成功')
     }
     dialogVisible.value = false
-    loadCategories()
+    await loadCategories()
   } catch (error) {
     ElMessage.error(error.message || '保存失败')
   } finally {
@@ -133,21 +142,26 @@ async function toggleStatus(row) {
   try {
     await toggleAdminDemandCategoryStatus(row.id, { status: row.status === 1 ? 2 : 1 })
     ElMessage.success('状态已更新')
-    loadCategories()
+    await loadCategories()
   } catch (error) {
     ElMessage.error(error.message || '更新状态失败')
   }
 }
 
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(`确认删除分类“${row.categoryName}”吗？删除后无法恢复。`, '删除分类', {
+      type: 'warning'
+    })
+    await deleteAdminDemandCategory(row.id)
+    ElMessage.success('分类已删除')
+    await loadCategories()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
 onMounted(loadCategories)
 </script>
-
-<style scoped>
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-</style>

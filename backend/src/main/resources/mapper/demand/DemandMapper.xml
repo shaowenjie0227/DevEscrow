@@ -118,4 +118,10 @@
             updated_at = now()
         where category_id = #{categoryId}
     </update>
+
+    <select id="countByCategoryId" resultType="int">
+        select count(1)
+        from `demand`
+        where category_id = #{categoryId}
+    </select>
 </mapper>

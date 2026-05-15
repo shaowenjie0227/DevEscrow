@@ -35,6 +35,6 @@ const accountName = computed(() => {
 
 function handleLogout() {
   authStore.logout()
-  router.push('/login')
+  router.push('/market')
 }
 </script>

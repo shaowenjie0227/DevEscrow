@@ -7,6 +7,7 @@ import com.programmer.escrow.kb.dto.KnowledgeBaseStatusDTO;
 import com.programmer.escrow.kb.service.KnowledgeBaseService;
 import com.programmer.escrow.kb.vo.KnowledgeBaseVO;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,5 +46,10 @@ public class AdminKnowledgeBaseController {
     @PostMapping("/{id}/status")
     public ApiResponse<AdminOperationVO> updateStatus(@PathVariable Long id, @Valid @RequestBody KnowledgeBaseStatusDTO dto) {
         return ApiResponse.success(knowledgeBaseService.updateStatus(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<AdminOperationVO> delete(@PathVariable Long id) {
+        return ApiResponse.success(knowledgeBaseService.delete(id));
     }
 }

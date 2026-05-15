@@ -7,6 +7,7 @@ import com.programmer.escrow.common.api.ApiResponse;
 import com.programmer.escrow.demand.service.DemandCategoryService;
 import com.programmer.escrow.demand.vo.DemandCategoryVO;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,5 +48,10 @@ public class AdminDemandCategoryController {
     public ApiResponse<AdminOperationVO> updateCategoryStatus(@PathVariable Long categoryId,
                                                               @Valid @RequestBody DemandCategoryStatusDTO dto) {
         return ApiResponse.success(demandCategoryService.updateCategoryStatus(categoryId, dto));
+    }
+
+    @DeleteMapping("/{categoryId}")
+    public ApiResponse<AdminOperationVO> deleteCategory(@PathVariable Long categoryId) {
+        return ApiResponse.success(demandCategoryService.deleteCategory(categoryId));
     }
 }

@@ -45,6 +45,11 @@
         where id = #{id}
     </update>
 
+    <delete id="deleteById">
+        delete from `resource_post`
+        where id = #{id}
+    </delete>
+
     <update id="incrementLike">
         update `resource_post`
         set like_count = like_count + 1,

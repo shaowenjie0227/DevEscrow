@@ -105,6 +105,7 @@ public class DemandServiceImpl implements DemandService {
                 .budgetMax(entity.getBudgetMax())
                 .expectedDays(entity.getExpectedDays())
                 .deliveryType(entity.getDeliveryType())
+                .quoteCount(entity.getQuoteCount())
                 .reviewStatus(entity.getReviewStatus())
                 .status(entity.getStatus())
                 .coverImage(images.isEmpty() ? null : images.get(0).getUrl())

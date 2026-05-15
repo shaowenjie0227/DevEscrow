@@ -11,6 +11,7 @@ public interface ResourcePostMapper {
     int insert(ResourcePostEntity entity);
     int update(ResourcePostEntity entity);
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+    int deleteById(@Param("id") Long id);
     int incrementLike(@Param("id") Long id);
     int incrementFavorite(@Param("id") Long id);
     int incrementShare(@Param("id") Long id);

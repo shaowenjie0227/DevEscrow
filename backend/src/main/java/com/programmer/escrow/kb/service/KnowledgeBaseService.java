@@ -14,5 +14,6 @@ public interface KnowledgeBaseService {
     KnowledgeBaseVO create(KnowledgeBaseSaveDTO dto);
     KnowledgeBaseVO update(Long id, KnowledgeBaseSaveDTO dto);
     AdminOperationVO updateStatus(Long id, KnowledgeBaseStatusDTO dto);
+    AdminOperationVO delete(Long id);
     KnowledgeBaseEntity getActive(Long id);
 }

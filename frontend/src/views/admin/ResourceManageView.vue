@@ -28,17 +28,25 @@
           <span>{{ row.likeCount || 0 }} 赞 / {{ row.favoriteCount || 0 }} 收藏 / {{ row.shareCount || 0 }} 分享</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="240" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="editItem(row)">编辑</el-button>
-          <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
-            {{ row.status === 1 ? '停用' : '启用' }}
-          </el-button>
+          <div class="table-row-actions">
+            <el-button size="small" @click="editItem(row)">编辑</el-button>
+            <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
+              {{ row.status === 1 ? '停用' : '启用' }}
+            </el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建资源' : '编辑资源'" width="720px">
+    <el-dialog
+      v-model="dialogVisible"
+      append-to-body
+      :title="dialogMode === 'create' ? '新建资源' : '编辑资源'"
+      width="720px"
+    >
       <el-form :model="form" label-position="top">
         <el-form-item label="标题">
           <el-input v-model="form.title" placeholder="资源标题" />
@@ -47,7 +55,7 @@
           <el-input v-model="form.intro" type="textarea" :rows="3" placeholder="一句话说明资源内容和用途" />
         </el-form-item>
         <el-form-item label="封面图片">
-          <ImageUploadField v-model="form.coverUrl" hint="资源卡片建议上传一张清晰的封面图，方便首页浏览。" />
+          <ImageUploadField v-model="form.coverUrl" hint="资源卡片建议上传清晰封面图，方便首页浏览。" />
         </el-form-item>
         <el-form-item label="跳转链接">
           <el-input v-model="form.linkUrl" placeholder="外部链接或平台内地址" />
@@ -68,9 +76,15 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
-import { createAdminResource, fetchAdminResources, toggleAdminResourceStatus, updateAdminResource } from '@/api/modules/admin'
+import {
+  createAdminResource,
+  deleteAdminResource,
+  fetchAdminResources,
+  toggleAdminResourceStatus,
+  updateAdminResource
+} from '@/api/modules/admin'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -136,7 +150,7 @@ async function submitForm() {
       ElMessage.success('资源保存成功')
     }
     dialogVisible.value = false
-    loadItems()
+    await loadItems()
   } catch (error) {
     ElMessage.error(error.message || '保存失败')
   } finally {
@@ -148,9 +162,24 @@ async function toggleStatus(row) {
   try {
     await toggleAdminResourceStatus(row.id, { status: row.status === 1 ? 2 : 1 })
     ElMessage.success('状态已更新')
-    loadItems()
+    await loadItems()
   } catch (error) {
     ElMessage.error(error.message || '更新状态失败')
+  }
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(`确认删除资源“${row.title}”吗？删除后无法恢复。`, '删除资源', {
+      type: 'warning'
+    })
+    await deleteAdminResource(row.id)
+    ElMessage.success('资源已删除')
+    await loadItems()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 

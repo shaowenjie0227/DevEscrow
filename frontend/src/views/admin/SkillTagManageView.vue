@@ -17,17 +17,25 @@
           <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="editTag(row)">编辑</el-button>
-          <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
-            {{ row.status === 1 ? '停用' : '启用' }}
-          </el-button>
+          <div class="table-row-actions">
+            <el-button size="small" @click="editTag(row)">编辑</el-button>
+            <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
+              {{ row.status === 1 ? '停用' : '启用' }}
+            </el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建技术栈' : '编辑技术栈'" width="560px">
+    <el-dialog
+      v-model="dialogVisible"
+      append-to-body
+      :title="dialogMode === 'create' ? '新建技术栈' : '编辑技术栈'"
+      width="560px"
+    >
       <el-form :model="form" label-position="top">
         <el-form-item label="技术栈名称">
           <el-input v-model="form.tagName" placeholder="例如：SpringBoot" />
@@ -56,8 +64,14 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { createAdminSkillTag, fetchAdminSkillTags, toggleAdminSkillTagStatus, updateAdminSkillTag } from '@/api/modules/admin'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  createAdminSkillTag,
+  deleteAdminSkillTag,
+  fetchAdminSkillTags,
+  toggleAdminSkillTagStatus,
+  updateAdminSkillTag
+} from '@/api/modules/admin'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -117,7 +131,7 @@ async function submitForm() {
       ElMessage.success('技术栈保存成功')
     }
     dialogVisible.value = false
-    loadTags()
+    await loadTags()
   } catch (error) {
     ElMessage.error(error.message || '保存失败')
   } finally {
@@ -129,9 +143,24 @@ async function toggleStatus(row) {
   try {
     await toggleAdminSkillTagStatus(row.id, { status: row.status === 1 ? 2 : 1 })
     ElMessage.success('状态已更新')
-    loadTags()
+    await loadTags()
   } catch (error) {
     ElMessage.error(error.message || '更新状态失败')
+  }
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(`确认删除技术栈“${row.tagName}”吗？删除后无法恢复。`, '删除技术栈', {
+      type: 'warning'
+    })
+    await deleteAdminSkillTag(row.id)
+    ElMessage.success('技术栈已删除')
+    await loadTags()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 

@@ -2,7 +2,6 @@
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import Footer from './Footer.vue'
-import MarketSubNav from './MarketSubNav.vue'
 import TopNav from './TopNav.vue'
 
 const props = defineProps<{
@@ -20,7 +19,6 @@ function goBack() {
 <template>
   <div class="market-page">
     <TopNav />
-    <MarketSubNav />
 
     <main class="market-container market-content-page">
       <div class="market-detail__top">

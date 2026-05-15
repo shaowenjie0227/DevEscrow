@@ -1,5 +1,6 @@
 package com.programmer.escrow.user.controller.admin;
 
+import com.programmer.escrow.admin.dto.DeveloperAuditDTO;
 import com.programmer.escrow.admin.dto.UserBanDTO;
 import com.programmer.escrow.admin.service.AdminOpsService;
 import com.programmer.escrow.admin.service.AdminQueryService;
@@ -39,5 +40,11 @@ public class AdminUserController {
     @PostMapping("/{userId}/ban")
     public ApiResponse<AdminOperationVO> banUser(@PathVariable Long userId, @Valid @RequestBody UserBanDTO dto) {
         return ApiResponse.success(adminOpsService.banUser(userId, dto));
+    }
+
+    @PostMapping("/{userId}/developer-audit")
+    public ApiResponse<AdminOperationVO> auditDeveloper(@PathVariable Long userId,
+                                                        @Valid @RequestBody DeveloperAuditDTO dto) {
+        return ApiResponse.success(adminOpsService.auditDeveloper(userId, dto.getApprove(), dto.getRemark()));
     }
 }

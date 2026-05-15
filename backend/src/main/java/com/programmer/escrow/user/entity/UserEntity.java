@@ -10,6 +10,7 @@ public class UserEntity {
 
     private Long id;
     private String userNo;
+    private String openid;
     private String phone;
     private String email;
     private String passwordHash;
@@ -17,6 +18,7 @@ public class UserEntity {
     private String avatarUrl;
     private Integer userType;
     private String realName;
+    private String idCardNo;
     private Integer idVerifyStatus;
     private Integer developerStatus;
     private String skillTags;

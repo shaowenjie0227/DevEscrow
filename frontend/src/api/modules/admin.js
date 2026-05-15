@@ -8,6 +8,10 @@ export function fetchAdminUsers(params) {
   return http.get('/api/admin/users', { params })
 }
 
+export function auditAdminDeveloper(userId, data) {
+  return http.post(`/api/admin/users/${userId}/developer-audit`, data)
+}
+
 export function fetchAdminDemands(params) {
   return http.get('/api/admin/demands', { params })
 }
@@ -52,6 +56,10 @@ export function toggleAdminDemandCategoryStatus(categoryId, data) {
   return http.post(`/api/admin/demand-categories/${categoryId}/status`, data)
 }
 
+export function deleteAdminDemandCategory(categoryId) {
+  return http.delete(`/api/admin/demand-categories/${categoryId}`)
+}
+
 export function fetchAdminBanners(params) {
   return http.get('/api/admin/banners', { params })
 }
@@ -62,6 +70,10 @@ export function createAdminBanner(data) {
 
 export function updateAdminBanner(bannerId, data) {
   return http.put(`/api/admin/banners/${bannerId}`, data)
+}
+
+export function toggleAdminBannerStatus(bannerId, data) {
+  return http.post(`/api/admin/banners/${bannerId}/status`, data)
 }
 
 export function deleteAdminBanner(bannerId) {
@@ -84,6 +96,10 @@ export function toggleAdminSkillTagStatus(tagId, data) {
   return http.post(`/api/admin/skill-tags/${tagId}/status`, data)
 }
 
+export function deleteAdminSkillTag(tagId) {
+  return http.delete(`/api/admin/skill-tags/${tagId}`)
+}
+
 export function fetchAdminKnowledgeBases() {
   return http.get('/api/admin/knowledge-bases')
 }
@@ -100,6 +116,10 @@ export function toggleAdminKnowledgeBaseStatus(id, data) {
   return http.post(`/api/admin/knowledge-bases/${id}/status`, data)
 }
 
+export function deleteAdminKnowledgeBase(id) {
+  return http.delete(`/api/admin/knowledge-bases/${id}`)
+}
+
 export function fetchAdminResources(params) {
   return http.get('/api/admin/resources', { params })
 }
@@ -114,6 +134,10 @@ export function updateAdminResource(id, data) {
 
 export function toggleAdminResourceStatus(id, data) {
   return http.post(`/api/admin/resources/${id}/status`, data)
+}
+
+export function deleteAdminResource(id) {
+  return http.delete(`/api/admin/resources/${id}`)
 }
 
 export function uploadAdminImage(file) {

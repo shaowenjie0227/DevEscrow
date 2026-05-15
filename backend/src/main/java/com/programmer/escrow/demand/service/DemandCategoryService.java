@@ -20,5 +20,7 @@ public interface DemandCategoryService {
 
     AdminOperationVO updateCategoryStatus(Long categoryId, DemandCategoryStatusDTO dto);
 
+    AdminOperationVO deleteCategory(Long categoryId);
+
     DemandCategoryEntity getEnabledCategory(Long categoryId);
 }

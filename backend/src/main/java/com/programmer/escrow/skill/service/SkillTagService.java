@@ -14,5 +14,6 @@ public interface SkillTagService {
     SkillTagVO create(SkillTagSaveDTO dto);
     SkillTagVO update(Long tagId, SkillTagSaveDTO dto);
     AdminOperationVO updateStatus(Long tagId, SkillTagStatusDTO dto);
+    AdminOperationVO delete(Long tagId);
     SkillTagEntity getActiveTag(Long tagId);
 }

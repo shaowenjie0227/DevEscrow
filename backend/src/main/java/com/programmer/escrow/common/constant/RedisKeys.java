@@ -2,6 +2,12 @@ package com.programmer.escrow.common.constant;
 
 public final class RedisKeys {
 
+    public static final String LOGIN_QR = "LOGIN_QR:%s";
+    public static final String LOGIN_QR_CODE = "LOGIN_QR_CODE:%s";
+    public static final String LOGIN_QR_SCAN_LOCK = "LOGIN_QR_SCAN_LOCK:%s";
+    public static final String LOGIN_USER = "LOGIN_USER:%s";
+    public static final String JWT_BLACKLIST = "JWT_BLACKLIST:%s";
+    public static final String WECHAT_ACCESS_TOKEN = "WECHAT:ACCESS_TOKEN";
     public static final String AUTH_TOKEN = "auth:token:%s";
     public static final String AUTH_USER_TOKENS = "auth:user_tokens:%s";
     public static final String SESSION_USER = "session:user:%s";

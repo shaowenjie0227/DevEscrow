@@ -83,6 +83,18 @@ public class ResourcePostServiceImpl implements ResourcePostService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AdminOperationVO delete(Long id) {
+        getOrThrow(id);
+        resourcePostMapper.deleteById(id);
+        return AdminOperationVO.builder()
+                .targetId(id)
+                .status(0)
+                .message("资源已删除")
+                .build();
+    }
+
+    @Override
     public ResourcePostEntity getActive(Long id) {
         ResourcePostEntity entity = getOrThrow(id);
         if (!Objects.equals(entity.getStatus(), 1)) {

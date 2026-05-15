@@ -1,22 +1,54 @@
 import { defineStore } from 'pinia'
 
+function readUserInfo() {
+  try {
+    const raw = window.localStorage.getItem('user_info')
+    return raw ? JSON.parse(raw) : null
+  } catch (error) {
+    return null
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: window.localStorage.getItem('user_token') || '',
-    userInfo: window.localStorage.getItem('user_info')
-      ? JSON.parse(window.localStorage.getItem('user_info'))
-      : null
+    userInfo: readUserInfo()
   }),
   actions: {
     setLogin(payload) {
       const normalized = payload?.data ?? payload
-      if (!normalized?.token) {
-        throw new Error('用户登录返回中缺少 token')
+      const token = normalized?.token || normalized?.jwt
+      if (!token) {
+        throw new Error('登录返回中缺少 token')
       }
-      this.token = normalized.token
-      this.userInfo = normalized.userInfo || normalized
-      window.localStorage.setItem('user_token', normalized.token)
-      window.localStorage.setItem('user_info', JSON.stringify(this.userInfo))
+
+      const userInfo = normalized.userInfo || {
+        userId: normalized.userId,
+        nickname: normalized.nickname,
+        avatarUrl: normalized.avatarUrl,
+        phone: normalized.phone,
+        email: normalized.email,
+        userType: normalized.userType,
+        roles: normalized.roles || [],
+        developerStatus: normalized.developerStatus,
+        idVerifyStatus: normalized.idVerifyStatus,
+        skillAuditStatus: normalized.skillAuditStatus,
+        developerRoleType: normalized.developerRoleType,
+        skillTags: normalized.skillTags,
+        redirectPath: normalized.redirectPath
+      }
+
+      this.token = token
+      this.userInfo = userInfo
+      window.localStorage.setItem('user_token', token)
+      window.localStorage.setItem('user_info', JSON.stringify(userInfo))
+    },
+    updateToken(token) {
+      if (!token) {
+        return
+      }
+      this.token = token
+      window.localStorage.setItem('user_token', token)
     },
     logout() {
       this.token = ''

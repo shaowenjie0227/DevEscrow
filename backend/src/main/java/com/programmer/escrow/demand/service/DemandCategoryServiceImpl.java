@@ -85,6 +85,21 @@ public class DemandCategoryServiceImpl implements DemandCategoryService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AdminOperationVO deleteCategory(Long categoryId) {
+        getCategoryOrThrow(categoryId);
+        if (demandMapper.countByCategoryId(categoryId) > 0) {
+            throw new BizException(400, "该需求分类已被需求引用，暂时不能删除");
+        }
+        demandCategoryMapper.deleteById(categoryId);
+        return AdminOperationVO.builder()
+                .targetId(categoryId)
+                .status(0)
+                .message("需求分类已删除")
+                .build();
+    }
+
+    @Override
     public DemandCategoryEntity getEnabledCategory(Long categoryId) {
         DemandCategoryEntity entity = getCategoryOrThrow(categoryId);
         if (!Objects.equals(entity.getStatus(), 1)) {

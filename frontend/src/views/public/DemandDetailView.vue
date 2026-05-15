@@ -3,17 +3,20 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Clock, Location, Promotion } from '@element-plus/icons-vue'
 import Footer from '@/components/home/Footer.vue'
-import MarketSubNav from '@/components/home/MarketSubNav.vue'
 import TopNav from '@/components/home/TopNav.vue'
-import { fetchMarketDemands } from '@/api/modules/demand'
+import { fetchPublicMarketDemandDetail } from '@/api/modules/demand'
 
 const route = useRoute()
 const router = useRouter()
 const demand = ref<any>(null)
 
 async function loadDemand() {
-  const response = await fetchMarketDemands()
-  demand.value = (response.data || []).find((item: any) => String(item.id) === String(route.params.id)) || null
+  try {
+    const response = await fetchPublicMarketDemandDetail(route.params.id)
+    demand.value = response.data || null
+  } catch (error) {
+    demand.value = null
+  }
 }
 
 onMounted(loadDemand)
@@ -22,7 +25,6 @@ onMounted(loadDemand)
 <template>
   <div class="market-page">
     <TopNav />
-    <MarketSubNav />
 
     <main class="market-container market-detail" v-if="demand">
       <div class="market-detail__top">

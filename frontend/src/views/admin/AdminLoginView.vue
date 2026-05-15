@@ -32,7 +32,7 @@
             <h2>管理员登录</h2>
             <p>首次本地启动可直接使用默认账号进入后台，后续也方便替换成正式权限体系。</p>
           </div>
-          <router-link class="auth-link" to="/login">返回用户端</router-link>
+          <router-link class="auth-link" to="/market">返回用户端</router-link>
         </div>
 
         <el-form :model="form" label-position="top" @submit.prevent="handleLogin">

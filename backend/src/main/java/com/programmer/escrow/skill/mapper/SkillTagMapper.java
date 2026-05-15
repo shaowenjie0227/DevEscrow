@@ -11,6 +11,8 @@ public interface SkillTagMapper {
     int insert(SkillTagEntity entity);
     int update(SkillTagEntity entity);
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+    int deleteById(@Param("id") Long id);
+    int countReferencedUsers(@Param("id") Long id);
     SkillTagEntity selectById(@Param("id") Long id);
     SkillTagEntity selectByName(@Param("tagName") String tagName);
     List<SkillTagEntity> selectAdminList();

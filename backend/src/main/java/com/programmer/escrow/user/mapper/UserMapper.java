@@ -17,6 +17,8 @@ public interface UserMapper {
 
     UserEntity selectByEmail(@Param("email") String email);
 
+    UserEntity selectByOpenid(@Param("openid") String openid);
+
     UserEntity selectByAccount(@Param("account") String account);
 
     List<UserEntity> selectAdminList(@Param("status") Integer status,
@@ -30,4 +32,6 @@ public interface UserMapper {
     int updateDeveloperProfile(UserEntity entity);
 
     int updateBasicProfile(UserEntity entity);
+
+    int updateWechatProfile(UserEntity entity);
 }

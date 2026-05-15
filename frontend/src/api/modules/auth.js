@@ -8,6 +8,18 @@ export function register(data) {
   return http.post('/api/auth/register', data)
 }
 
+export function createQrLogin() {
+  return http.post('/api/auth/qr/create')
+}
+
+export function fetchCurrentUser() {
+  return http.get('/api/auth/me')
+}
+
+export function logout() {
+  return http.post('/api/auth/logout')
+}
+
 export function getDeveloperProfile() {
   return http.get('/api/developer/profile')
 }
@@ -20,6 +32,12 @@ export function applyDeveloperProfile(data) {
   return http.post('/api/developer/profile/apply', data)
 }
 
-export function submitDeveloperSkillTags(data) {
-  return http.post('/api/developer/profile/skill-tags', data)
+export function uploadUserImage(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return http.post('/api/uploads/images', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
 }

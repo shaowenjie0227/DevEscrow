@@ -23,17 +23,25 @@
           <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="240" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="editBanner(row)">编辑</el-button>
-          <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
-            {{ row.status === 1 ? '停用' : '启用' }}
-          </el-button>
+          <div class="table-row-actions">
+            <el-button size="small" @click="editBanner(row)">编辑</el-button>
+            <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" @click="toggleStatus(row)">
+              {{ row.status === 1 ? '停用' : '启用' }}
+            </el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新建轮播' : '编辑轮播'" width="720px">
+    <el-dialog
+      v-model="dialogVisible"
+      append-to-body
+      :title="dialogMode === 'create' ? '新建轮播' : '编辑轮播'"
+      width="720px"
+    >
       <el-form :model="form" label-position="top">
         <el-form-item label="标题">
           <el-input v-model="form.title" placeholder="活动或公告标题" />
@@ -66,9 +74,15 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import ImageUploadField from '@/components/admin/ImageUploadField.vue'
-import { createAdminBanner, fetchAdminBanners, updateAdminBanner } from '@/api/modules/admin'
+import {
+  createAdminBanner,
+  deleteAdminBanner,
+  fetchAdminBanners,
+  toggleAdminBannerStatus,
+  updateAdminBanner
+} from '@/api/modules/admin'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -137,7 +151,7 @@ async function submitForm() {
       ElMessage.success('轮播保存成功')
     }
     dialogVisible.value = false
-    loadBanners()
+    await loadBanners()
   } catch (error) {
     ElMessage.error(error.message || '保存失败')
   } finally {
@@ -147,11 +161,26 @@ async function submitForm() {
 
 async function toggleStatus(row) {
   try {
-    await updateAdminBanner(row.id, { ...row, status: row.status === 1 ? 2 : 1 })
+    await toggleAdminBannerStatus(row.id, { status: row.status === 1 ? 2 : 1 })
     ElMessage.success('状态已更新')
-    loadBanners()
+    await loadBanners()
   } catch (error) {
     ElMessage.error(error.message || '更新状态失败')
+  }
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(`确认删除轮播“${row.title}”吗？删除后无法恢复。`, '删除轮播', {
+      type: 'warning'
+    })
+    await deleteAdminBanner(row.id)
+    ElMessage.success('轮播已删除')
+    await loadBanners()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
 }
 

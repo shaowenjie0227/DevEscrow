@@ -8,6 +8,7 @@ import com.programmer.escrow.resource.dto.ResourcePostStatusDTO;
 import com.programmer.escrow.resource.service.ResourcePostService;
 import com.programmer.escrow.resource.vo.ResourcePostVO;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,5 +47,10 @@ public class AdminResourcePostController {
     @PostMapping("/{id}/status")
     public ApiResponse<AdminOperationVO> updateStatus(@PathVariable Long id, @Valid @RequestBody ResourcePostStatusDTO dto) {
         return ApiResponse.success(resourcePostService.updateStatus(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<AdminOperationVO> delete(@PathVariable Long id) {
+        return ApiResponse.success(resourcePostService.delete(id));
     }
 }

@@ -37,6 +37,10 @@
             updated_at = now()
         where id = #{id}
     </update>
+    <delete id="deleteById">
+        delete from `home_banner`
+        where id = #{id}
+    </delete>
     <select id="selectById" resultMap="HomeBannerResultMap">
         select <include refid="BaseColumns"/> from `home_banner` where id = #{id} limit 1
     </select>

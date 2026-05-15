@@ -7,6 +7,7 @@ import com.programmer.escrow.banner.service.HomeBannerService;
 import com.programmer.escrow.banner.vo.HomeBannerVO;
 import com.programmer.escrow.common.api.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,5 +46,10 @@ public class AdminHomeBannerController {
     @PostMapping("/{id}/status")
     public ApiResponse<AdminOperationVO> updateStatus(@PathVariable Long id, @Valid @RequestBody HomeBannerStatusDTO dto) {
         return ApiResponse.success(homeBannerService.updateStatus(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<AdminOperationVO> delete(@PathVariable Long id) {
+        return ApiResponse.success(homeBannerService.delete(id));
     }
 }

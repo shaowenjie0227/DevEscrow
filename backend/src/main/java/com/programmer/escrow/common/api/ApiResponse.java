@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class ApiResponse<T> {
 
     private Integer code;
+    private String msg;
     private String message;
     private T data;
     private String requestId;
@@ -19,6 +20,7 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
                 .code(0)
+                .msg("success")
                 .message("success")
                 .data(data)
                 .requestId(RequestContext.getRequestId())
@@ -28,6 +30,7 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> fail(Integer code, String message) {
         return ApiResponse.<T>builder()
                 .code(code)
+                .msg(message)
                 .message(message)
                 .requestId(RequestContext.getRequestId())
                 .build();

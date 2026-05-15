@@ -102,9 +102,12 @@ public class AdminQueryServiceImpl implements AdminQueryService {
                 .developerRoleType(entity.getDeveloperRoleType())
                 .skillTags(entity.getSkillTags())
                 .realName(entity.getRealName())
+                .idCardNo(entity.getIdCardNo())
                 .idCardFrontUrl(entity.getIdCardFrontUrl())
                 .idCardBackUrl(entity.getIdCardBackUrl())
                 .selfieUrl(entity.getSelfieUrl())
+                .developerSkillTagIds(entity.getDeveloperSkillTagIds())
+                .skillAuditReason(entity.getSkillAuditReason())
                 .status(entity.getStatus())
                 .build();
     }

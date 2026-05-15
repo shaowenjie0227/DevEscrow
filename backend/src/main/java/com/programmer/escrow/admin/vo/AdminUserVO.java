@@ -19,8 +19,11 @@ public class AdminUserVO {
     private Integer developerRoleType;
     private String skillTags;
     private String realName;
+    private String idCardNo;
     private String idCardFrontUrl;
     private String idCardBackUrl;
     private String selfieUrl;
+    private String developerSkillTagIds;
+    private String skillAuditReason;
     private Integer status;
 }

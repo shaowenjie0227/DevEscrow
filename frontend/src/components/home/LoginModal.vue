@@ -1,75 +1,310 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElDialog, ElInput, ElMessage } from 'element-plus'
-import { Cellphone, Close, Lock, User } from '@element-plus/icons-vue'
-import { login, register } from '@/api/modules/auth'
+import { Cellphone, Close, Lock, Message, User } from '@element-plus/icons-vue'
+import { createQrLogin, login, register } from '@/api/modules/auth'
+import { useLoginWebSocket } from '@/composables/useLoginWebSocket'
 import { useAuthStore } from '@/stores/auth'
 
-type EntryRole = 'client' | 'developer'
-type ModalTab = 'password' | 'register'
+type AuthPanel = 'password' | 'sms' | 'register'
 
-const props = defineProps<{ modelValue: boolean }>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    forceLogin?: boolean
+    allowRegister?: boolean
+    message?: string
+    successRedirect?: string
+  }>(),
+  {
+    forceLogin: false,
+    allowRegister: true,
+    message: '',
+    successRedirect: ''
+  }
+)
+
 const emit = defineEmits<{ 'update:modelValue': [boolean]; success: [] }>()
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const activeTab = ref<ModalTab>('password')
-const entryRole = ref<EntryRole>('client')
-const submitting = ref(false)
-
-const loginForm = reactive({
-  account: '',
-  password: ''
-})
-
-const registerForm = reactive({
-  phone: '',
-  email: '',
-  nickname: '',
-  password: '',
-  userType: 1,
-  realName: '',
-  developerRoleType: 1,
-  idCardFrontUrl: '',
-  idCardBackUrl: '',
-  selfieUrl: '',
-  skillTagIds: [] as number[]
-})
+const DEFAULT_QR_NOTICE = '请先使用微信扫描固定公众号二维码，关注后在公众号登录页输入右侧 6 位登录码。'
 
 const visible = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value)
 })
 
+const activePanel = ref<AuthPanel>('password')
+const submitting = ref(false)
+const qrLoading = ref(false)
+const smsCountdown = ref(0)
+
+const loginForm = reactive({
+  account: '',
+  password: ''
+})
+
+const smsForm = reactive({
+  phone: '',
+  code: ''
+})
+
+const registerForm = reactive({
+  phone: '',
+  email: '',
+  nickname: '',
+  password: ''
+})
+
+const loginCode = ref('')
+const officialQrImageUrl = ref('')
+const loginEntryUrl = ref('')
+const qrNotice = ref(DEFAULT_QR_NOTICE)
+const remainingSeconds = ref(300)
+const expireAt = ref(0)
+
+let refreshTimer: number | null = null
+let countdownTimer: number | null = null
+let smsTimer: number | null = null
+
+const loginCodeDisplay = computed(() => loginCode.value || '------')
+const loginEntryLink = computed(() => {
+  if (!loginEntryUrl.value) {
+    return 'http://localhost:8080/wx/login-entry'
+  }
+  return loginCode.value ? `${loginEntryUrl.value}?code=${loginCode.value}` : loginEntryUrl.value
+})
+const showDismissAction = computed(() => !props.forceLogin && Boolean(props.message?.trim()))
+const isSmsPanel = computed(() => activePanel.value === 'sms')
+const isRegisterPanel = computed(() => activePanel.value === 'register')
+const panelTitle = computed(() => {
+  if (activePanel.value === 'register') return '注册新账号'
+  if (activePanel.value === 'sms') return '短信验证码登录'
+  return '密码登录'
+})
+const socketText = computed(() => {
+  if (socketState.value === 'open') return '已连接'
+  if (socketState.value === 'connecting') return '连接中'
+  if (socketState.value === 'reconnecting') return '重连中'
+  if (socketState.value === 'error') return '连接异常'
+  return '未连接'
+})
+
+const { connect, disconnect, socketState } = useLoginWebSocket({
+  onMessage: handleSocketMessage,
+  onStateChange: handleSocketStateChange
+})
+
+watch(
+  () => props.modelValue,
+  (isVisible) => {
+    if (isVisible) {
+      activePanel.value = 'password'
+      qrNotice.value = DEFAULT_QR_NOTICE
+      refreshQrLogin()
+      return
+    }
+    stopQrSession()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.allowRegister,
+  (allowRegister) => {
+    if (!allowRegister && activePanel.value === 'register') {
+      activePanel.value = 'password'
+    }
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  stopQrSession()
+  clearSmsTimer()
+})
+
+function clearTimers() {
+  if (refreshTimer) {
+    window.clearTimeout(refreshTimer)
+    refreshTimer = null
+  }
+  if (countdownTimer) {
+    window.clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
+
+function clearSmsTimer() {
+  if (smsTimer) {
+    window.clearInterval(smsTimer)
+    smsTimer = null
+  }
+  smsCountdown.value = 0
+}
+
+function stopQrSession(nextNotice = DEFAULT_QR_NOTICE) {
+  clearTimers()
+  disconnect()
+  loginCode.value = ''
+  officialQrImageUrl.value = ''
+  loginEntryUrl.value = ''
+  remainingSeconds.value = 300
+  expireAt.value = 0
+  qrNotice.value = nextNotice
+}
+
 function closeDialog() {
+  if (props.forceLogin) {
+    return
+  }
   visible.value = false
 }
 
+function clearForms() {
+  loginForm.account = ''
+  loginForm.password = ''
+  smsForm.phone = ''
+  smsForm.code = ''
+  registerForm.phone = ''
+  registerForm.email = ''
+  registerForm.nickname = ''
+  registerForm.password = ''
+}
+
 function openAdminLogin() {
-  closeDialog()
+  visible.value = false
+  stopQrSession()
   router.push('/admin/login')
 }
 
-function resolveEntryTarget(roles: string[] = [], preferred: EntryRole) {
-  if (preferred === 'developer' && roles.includes('DEVELOPER')) return '/developer/home'
-  if (preferred === 'client' && roles.includes('CLIENT')) return '/client/home'
-  if (roles.includes('CLIENT')) return '/client/home'
-  if (roles.includes('DEVELOPER')) return '/developer/home'
-  return '/market'
+function resolveRedirectPath(payload: any) {
+  if (payload?.redirectPath) {
+    return payload.redirectPath
+  }
+  return '/me'
 }
 
-async function handleLogin() {
+function finishAfterLogin(target: string) {
+  if (!target) {
+    return
+  }
+  if (target === route.fullPath) {
+    window.location.reload()
+    return
+  }
+  router.push(target)
+}
+
+function startExpiryTimer(targetExpireAt: number) {
+  clearTimers()
+  expireAt.value = targetExpireAt
+
+  const tick = () => {
+    remainingSeconds.value = Math.max(0, Math.ceil((expireAt.value - Date.now()) / 1000))
+  }
+
+  tick()
+  countdownTimer = window.setInterval(tick, 1000)
+
+  const delay = Math.max(0, expireAt.value - Date.now() - 1000)
+  refreshTimer = window.setTimeout(() => {
+    qrNotice.value = '登录码已过期，正在自动刷新…'
+    refreshQrLogin()
+  }, delay)
+}
+
+async function refreshQrLogin() {
+  if (!props.modelValue) {
+    return
+  }
+
+  qrLoading.value = true
+  qrNotice.value = '正在生成当前电脑的临时登录码…'
+  clearTimers()
+  disconnect()
+
+  try {
+    const response = await createQrLogin()
+    const payload = response?.data ?? response
+    loginCode.value = payload.loginCode || ''
+    officialQrImageUrl.value = payload.officialAccountQrImageUrl || ''
+    loginEntryUrl.value = payload.loginEntryUrl || ''
+
+    if (payload.expireAt) {
+      startExpiryTimer(new Date(payload.expireAt).getTime())
+    }
+
+    if (payload.token) {
+      connect(payload.token)
+    }
+
+    qrNotice.value = '请扫码关注公众号，然后在手机端输入当前 6 位登录码完成本机授权。'
+  } catch (error) {
+    qrNotice.value = '登录码生成失败，请稍后重试。'
+    ElMessage.error(error instanceof Error ? error.message : '登录码生成失败')
+  } finally {
+    qrLoading.value = false
+  }
+}
+
+function handleSocketStateChange(state: string) {
+  if (state === 'open') {
+    qrNotice.value = '连接成功，等待公众号端输入登录码并完成授权。'
+  } else if (state === 'reconnecting') {
+    qrNotice.value = '连接断开，正在自动重连…'
+  } else if (state === 'error') {
+    qrNotice.value = '连接异常，请刷新登录码后重试。'
+  }
+}
+
+function handleSocketMessage(event: MessageEvent) {
+  let payload: any = {}
+
+  try {
+    payload = JSON.parse(event.data || '{}')
+  } catch (error) {
+    return
+  }
+
+  if (payload.type === 'PONG') {
+    return
+  }
+
+  if (payload.type === 'LOGIN_SUCCESS') {
+    authStore.setLogin({
+      token: payload.jwt,
+      userId: payload.userId,
+      nickname: payload.nickname,
+      avatarUrl: payload.avatarUrl,
+      userType: payload.userType,
+      roles: payload.roles,
+      redirectPath: payload.redirectPath
+    })
+    visible.value = false
+    stopQrSession()
+    clearForms()
+    emit('success')
+    ElMessage.success('扫码登录成功')
+    finishAfterLogin(props.successRedirect?.trim() || resolveRedirectPath(payload))
+  }
+}
+
+async function handlePasswordLogin() {
   submitting.value = true
   try {
     const response = await login(loginForm)
     const payload = response?.data ?? response
     authStore.setLogin(payload)
-    closeDialog()
+    visible.value = false
+    clearForms()
     emit('success')
     ElMessage.success('登录成功')
-    router.push(resolveEntryTarget(payload?.roles || [], entryRole.value))
+    finishAfterLogin(props.successRedirect?.trim() || resolveRedirectPath(payload))
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '登录失败')
   } finally {
@@ -83,206 +318,304 @@ async function handleRegister() {
     const response = await register(registerForm)
     const payload = response?.data ?? response
     authStore.setLogin(payload)
-    closeDialog()
+    visible.value = false
+    clearForms()
     emit('success')
     ElMessage.success('注册成功')
-    router.push(registerForm.userType === 2 ? '/developer/profile' : '/client/home')
+    finishAfterLogin(props.successRedirect?.trim() || resolveRedirectPath(payload))
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '注册失败')
   } finally {
     submitting.value = false
   }
 }
+
+function handleSmsLogin() {
+  ElMessage.warning('短信登录接口暂未接入，当前请先使用密码登录或扫码登录。')
+}
+
+function handleSendSms() {
+  if (!smsForm.phone.trim()) {
+    ElMessage.warning('请先输入手机号')
+    return
+  }
+
+  if (smsCountdown.value > 0) {
+    return
+  }
+
+  ElMessage.info('演示环境暂未对接短信服务，这里仅展示登录样式。')
+  clearSmsTimer()
+  smsCountdown.value = 60
+  smsTimer = window.setInterval(() => {
+    smsCountdown.value -= 1
+    if (smsCountdown.value <= 0) {
+      clearSmsTimer()
+    }
+  }, 1000)
+}
+
+function handleForgotPassword() {
+  ElMessage.info('找回密码流程暂未接入，请联系管理员或先使用扫码登录。')
+}
 </script>
 
 <template>
-  <ElDialog v-model="visible" width="980px" :show-close="false" align-center class="login-modal-shell">
+  <ElDialog
+    v-model="visible"
+    width="860px"
+    :show-close="false"
+    :close-on-click-modal="!forceLogin"
+    :close-on-press-escape="!forceLogin"
+    align-center
+    class="login-modal-shell"
+  >
     <div class="login-modal">
-      <button class="login-modal__close" type="button" @click="closeDialog" aria-label="关闭登录弹窗">
-        <el-icon :size="18"><Close /></el-icon>
+      <button
+        v-if="!forceLogin"
+        class="login-modal__close"
+        type="button"
+        aria-label="关闭登录弹窗"
+        @click="closeDialog"
+      >
+        <el-icon :size="20"><Close /></el-icon>
       </button>
 
-      <div class="login-modal__mascot" aria-hidden="true">
-        <span class="login-modal__mascot-eye login-modal__mascot-eye--left"></span>
-        <span class="login-modal__mascot-eye login-modal__mascot-eye--right"></span>
-        <span class="login-modal__mascot-mouth"></span>
-      </div>
-
-      <div class="login-modal__grid">
-        <section class="login-modal__main">
-          <div class="login-modal__header">
-            <p class="login-modal__eyebrow">欢迎回来</p>
-            <h2 class="login-modal__title">登录后继续逛需求</h2>
-            <p class="login-modal__desc">延续闲鱼式浏览节奏，但接的是你现有系统的真实账号体系。</p>
+      <div class="login-modal__body">
+        <section class="login-modal__scan">
+          <div class="login-modal__scan-header">
+            <h3>扫描二维码登录</h3>
+            <p>请使用微信扫描固定公众号二维码</p>
           </div>
 
-          <div class="login-modal__tabs">
-            <button class="login-modal__tab" :class="{ 'is-active': activeTab === 'password' }" type="button" @click="activeTab = 'password'">
-              密码登录
-            </button>
-            <button class="login-modal__tab" :class="{ 'is-active': activeTab === 'register' }" type="button" @click="activeTab = 'register'">
-              注册账号
+          <div class="login-modal__qr-frame">
+            <img
+              v-if="officialQrImageUrl"
+              class="login-modal__qr-image"
+              :src="officialQrImageUrl"
+              alt="微信公众号二维码"
+            />
+            <div v-else class="login-modal__qr-placeholder">公众号二维码</div>
+          </div>
+
+          <div class="login-modal__scan-copy">
+            <p>扫码关注公众号后，在手机端输入当前电脑登录码。</p>
+            <strong class="login-modal__code">{{ loginCodeDisplay }}</strong>
+          </div>
+
+          <div class="login-modal__scan-footer">
+            <span>请使用微信公众号登录页输入登录码</span>
+            <el-link type="primary" :href="loginEntryLink" target="_blank">打开手机登录入口</el-link>
+          </div>
+
+          <div class="login-modal__scan-status">
+            <span>剩余 {{ remainingSeconds }}s</span>
+            <span>{{ socketText }}</span>
+          </div>
+
+          <p class="login-modal__notice">{{ qrNotice }}</p>
+
+          <button class="login-modal__text-action" type="button" :disabled="qrLoading" @click="refreshQrLogin">
+            {{ qrLoading ? '刷新中…' : '刷新登录码' }}
+          </button>
+        </section>
+
+        <div class="login-modal__divider" />
+
+        <section class="login-modal__auth">
+          <div class="login-modal__auth-top">
+            <div class="login-modal__tabs" v-if="!isRegisterPanel">
+              <button
+                class="login-modal__tab"
+                :class="{ 'is-active': activePanel === 'password' }"
+                type="button"
+                @click="activePanel = 'password'"
+              >
+                密码登录
+              </button>
+              <button
+                class="login-modal__tab"
+                :class="{ 'is-active': activePanel === 'sms' }"
+                type="button"
+                @click="activePanel = 'sms'"
+              >
+                短信登录
+              </button>
+            </div>
+            <button
+              v-if="isRegisterPanel"
+              class="login-modal__back-link"
+              type="button"
+              @click="activePanel = 'password'"
+            >
+              返回登录
             </button>
           </div>
 
-          <form v-if="activeTab === 'password'" class="login-modal__form" @submit.prevent="handleLogin">
-            <div class="login-modal__field">
+          <div class="login-modal__auth-title">
+            <h3>{{ panelTitle }}</h3>
+            <p v-if="message">{{ message }}</p>
+            <p v-else-if="isRegisterPanel">注册后先进入个人中心，后续可申请成为开发者并等待管理员审核。</p>
+            <p v-else-if="isSmsPanel">短信界面已做好，短信服务接口暂未接入。</p>
+            <p v-else>请输入账号密码继续访问当前页面。</p>
+          </div>
+
+          <button
+            v-if="showDismissAction"
+            class="login-modal__soft-link"
+            type="button"
+            @click="closeDialog"
+          >
+            暂不登录
+          </button>
+
+          <form v-if="activePanel === 'password'" class="login-modal__form" @submit.prevent="handlePasswordLogin">
+            <div class="login-modal__field-row">
               <label>账号</label>
-              <ElInput v-model="loginForm.account" size="large" class="login-modal-input" placeholder="请输入手机号 / 邮箱 / 用户编号">
+              <ElInput v-model="loginForm.account" class="login-modal-input" placeholder="请输入账号">
                 <template #prefix>
                   <el-icon><User /></el-icon>
                 </template>
               </ElInput>
             </div>
 
-            <div class="login-modal__field">
+            <div class="login-modal__field-row">
               <label>密码</label>
-              <ElInput v-model="loginForm.password" size="large" class="login-modal-input" type="password" show-password placeholder="请输入密码">
+              <ElInput v-model="loginForm.password" class="login-modal-input" type="password" show-password placeholder="请输入密码">
                 <template #prefix>
                   <el-icon><Lock /></el-icon>
                 </template>
               </ElInput>
             </div>
 
-            <div class="login-modal__chooser">
-              <p>登录后进入</p>
-              <div class="login-modal__chooser-row">
-                <button class="login-modal__choice" :class="{ 'is-active': entryRole === 'client' }" type="button" @click="entryRole = 'client'">
-                  用户工作台
-                </button>
-                <button class="login-modal__choice" :class="{ 'is-active': entryRole === 'developer' }" type="button" @click="entryRole = 'developer'">
-                  开发者工作台
-                </button>
-              </div>
+            <div class="login-modal__helper-row">
+              <span>支持手机号、邮箱或用户编号登录</span>
+              <button class="login-modal__link-btn" type="button" @click="handleForgotPassword">
+                忘记密码？
+              </button>
             </div>
 
-            <button class="login-modal__submit" type="submit" :disabled="submitting">
-              {{ submitting ? '登录中...' : '登录' }}
-            </button>
+            <div class="login-modal__action-row">
+              <button
+                v-if="allowRegister"
+                class="login-modal__ghost-btn"
+                type="button"
+                @click="activePanel = 'register'"
+              >
+                注册
+              </button>
+              <button class="login-modal__primary-btn" type="submit" :disabled="submitting">
+                {{ submitting ? '登录中…' : '登录' }}
+              </button>
+            </div>
+          </form>
 
-            <p class="login-modal__agreement">登录即代表你已阅读并同意《平台服务协议》《隐私政策》。</p>
+          <form v-else-if="activePanel === 'sms'" class="login-modal__form" @submit.prevent="handleSmsLogin">
+            <div class="login-modal__field-row">
+              <label>手机</label>
+              <ElInput v-model="smsForm.phone" class="login-modal-input" placeholder="请输入手机号">
+                <template #prefix>
+                  <el-icon><Cellphone /></el-icon>
+                </template>
+              </ElInput>
+            </div>
+
+            <div class="login-modal__field-row">
+              <label>验证码</label>
+              <ElInput v-model="smsForm.code" class="login-modal-input" placeholder="请输入验证码">
+                <template #prefix>
+                  <el-icon><Message /></el-icon>
+                </template>
+                <template #append>
+                  <button class="login-modal__sms-btn" type="button" @click="handleSendSms">
+                    {{ smsCountdown > 0 ? `${smsCountdown}s` : '获取验证码' }}
+                  </button>
+                </template>
+              </ElInput>
+            </div>
+
+            <div class="login-modal__helper-row">
+              <span>当前只完成了页面样式与交互预留</span>
+              <span>后端短信接口待接入</span>
+            </div>
+
+            <div class="login-modal__action-row">
+              <button
+                v-if="allowRegister"
+                class="login-modal__ghost-btn"
+                type="button"
+                @click="activePanel = 'register'"
+              >
+                注册
+              </button>
+              <button class="login-modal__primary-btn" type="submit">
+                登录
+              </button>
+            </div>
           </form>
 
           <form v-else class="login-modal__form login-modal__form--register" @submit.prevent="handleRegister">
-            <div class="login-modal__form-grid">
-              <div class="login-modal__field">
-                <label>手机号</label>
-                <ElInput v-model="registerForm.phone" size="large" class="login-modal-input" placeholder="请输入手机号">
-                  <template #prefix>
-                    <el-icon><Cellphone /></el-icon>
-                  </template>
-                </ElInput>
-              </div>
-
-              <div class="login-modal__field">
-                <label>邮箱</label>
-                <ElInput v-model="registerForm.email" size="large" class="login-modal-input" placeholder="可选" />
-              </div>
+            <div class="login-modal__field-row">
+              <label>昵称</label>
+              <ElInput v-model="registerForm.nickname" class="login-modal-input" placeholder="请输入昵称">
+                <template #prefix>
+                  <el-icon><User /></el-icon>
+                </template>
+              </ElInput>
             </div>
 
-            <div class="login-modal__form-grid">
-              <div class="login-modal__field">
-                <label>昵称</label>
-                <ElInput v-model="registerForm.nickname" size="large" class="login-modal-input" placeholder="输入平台昵称" />
-              </div>
-
-              <div class="login-modal__field">
-                <label>密码</label>
-                <ElInput v-model="registerForm.password" size="large" class="login-modal-input" type="password" show-password placeholder="设置登录密码">
-                  <template #prefix>
-                    <el-icon><Lock /></el-icon>
-                  </template>
-                </ElInput>
-              </div>
+            <div class="login-modal__field-row">
+              <label>手机</label>
+              <ElInput v-model="registerForm.phone" class="login-modal-input" placeholder="请输入手机号">
+                <template #prefix>
+                  <el-icon><Cellphone /></el-icon>
+                </template>
+              </ElInput>
             </div>
 
-            <div class="login-modal__chooser">
-              <p>账号类型</p>
-              <div class="login-modal__chooser-row">
-                <button class="login-modal__choice" :class="{ 'is-active': registerForm.userType === 1 }" type="button" @click="registerForm.userType = 1">
-                  用户端
-                </button>
-                <button class="login-modal__choice" :class="{ 'is-active': registerForm.userType === 2 }" type="button" @click="registerForm.userType = 2">
-                  开发者
-                </button>
-                <button class="login-modal__choice" :class="{ 'is-active': registerForm.userType === 3 }" type="button" @click="registerForm.userType = 3">
-                  双角色
-                </button>
-              </div>
+            <div class="login-modal__field-row">
+              <label>邮箱</label>
+              <ElInput v-model="registerForm.email" class="login-modal-input" placeholder="可选，用于接收通知">
+                <template #prefix>
+                  <el-icon><Message /></el-icon>
+                </template>
+              </ElInput>
             </div>
 
-            <template v-if="registerForm.userType === 2 || registerForm.userType === 3">
-              <div class="login-modal__form-grid">
-                <div class="login-modal__field">
-                  <label>真实姓名</label>
-                  <ElInput v-model="registerForm.realName" size="large" class="login-modal-input" placeholder="身份证姓名" />
-                </div>
+            <div class="login-modal__field-row">
+              <label>密码</label>
+              <ElInput v-model="registerForm.password" class="login-modal-input" type="password" show-password placeholder="请设置登录密码">
+                <template #prefix>
+                  <el-icon><Lock /></el-icon>
+                </template>
+              </ElInput>
+            </div>
 
-                <div class="login-modal__field">
-                  <label>能力类型</label>
-                  <div class="login-modal__chooser-row">
-                    <button class="login-modal__choice" :class="{ 'is-active': registerForm.developerRoleType === 1 }" type="button" @click="registerForm.developerRoleType = 1">
-                      程序开发
-                    </button>
-                    <button class="login-modal__choice" :class="{ 'is-active': registerForm.developerRoleType === 2 }" type="button" @click="registerForm.developerRoleType = 2">
-                      文档撰写
-                    </button>
-                    <button class="login-modal__choice" :class="{ 'is-active': registerForm.developerRoleType === 3 }" type="button" @click="registerForm.developerRoleType = 3">
-                      都能做
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="login-modal__form-grid">
-                <div class="login-modal__field">
-                  <label>身份证正面链接</label>
-                  <ElInput v-model="registerForm.idCardFrontUrl" size="large" class="login-modal-input" placeholder="图片 URL" />
-                </div>
-
-                <div class="login-modal__field">
-                  <label>身份证反面链接</label>
-                  <ElInput v-model="registerForm.idCardBackUrl" size="large" class="login-modal-input" placeholder="图片 URL" />
-                </div>
-              </div>
-
-              <div class="login-modal__field">
-                <label>手持身份证自拍链接</label>
-                <ElInput v-model="registerForm.selfieUrl" size="large" class="login-modal-input" placeholder="图片 URL" />
-              </div>
-            </template>
-
-            <button class="login-modal__submit" type="submit" :disabled="submitting">
-              {{ submitting ? '注册中...' : '注册并进入系统' }}
-            </button>
+            <div class="login-modal__action-row">
+              <button class="login-modal__ghost-btn" type="button" @click="activePanel = 'password'">
+                返回
+              </button>
+              <button class="login-modal__primary-btn" type="submit" :disabled="submitting">
+                {{ submitting ? '注册中…' : '注册' }}
+              </button>
+            </div>
           </form>
-        </section>
 
-        <aside class="login-modal__aside">
-          <div class="login-modal__aside-card">
-            <p class="login-modal__aside-kicker">安全登录</p>
-            <h3 class="login-modal__aside-title">扫码继续</h3>
-            <div class="login-modal__qr">
-              <div class="login-modal__qr-grid">
-                <span
-                  v-for="index in 81"
-                  :key="index"
-                  class="login-modal__qr-cell"
-                  :class="[
-                    [1, 2, 3, 10, 12, 19, 20, 21, 29, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 59, 61, 63, 69, 70, 71, 79, 80, 81].includes(index)
-                      ? 'is-dark'
-                      : [5, 6, 7, 13, 14, 17, 23, 24, 25, 31, 33, 35, 57, 65, 67, 73, 74, 75].includes(index)
-                        ? 'is-brand'
-                        : ''
-                  ]"
-                ></span>
-              </div>
+          <div class="login-modal__extra">
+            <span>其他方式登录</span>
+            <div class="login-modal__extra-list">
+              <button class="login-modal__extra-item is-active" type="button" @click="refreshQrLogin">
+                公众号扫码
+              </button>
+              <button class="login-modal__extra-item" type="button" @click="activePanel = 'sms'">
+                短信验证码
+              </button>
+              <button class="login-modal__extra-item" type="button" @click="openAdminLogin">
+                后台登录
+              </button>
             </div>
-            <p class="login-modal__aside-copy">Demo 版暂未接入真实扫码能力，先用左侧账号体系登录。</p>
           </div>
-
-          <button class="login-modal__admin" type="button" @click="openAdminLogin">进入后台管理员登录</button>
-        </aside>
+        </section>
       </div>
     </div>
   </ElDialog>
@@ -291,8 +624,8 @@ async function handleRegister() {
 <style scoped>
 :deep(.login-modal-shell .el-dialog) {
   max-width: calc(100vw - 24px);
-  border-radius: 36px;
-  overflow: visible;
+  border-radius: 18px;
+  overflow: hidden;
   background: transparent;
   box-shadow: none !important;
 }
@@ -307,14 +640,9 @@ async function handleRegister() {
 
 .login-modal {
   position: relative;
-  overflow: visible;
-  padding: 42px 28px 28px;
-  border-radius: 38px;
-  background:
-    radial-gradient(circle at top right, rgba(255, 209, 0, 0.16), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.95));
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 36px 90px rgba(17, 17, 17, 0.22);
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 28px 64px rgba(15, 23, 42, 0.18);
 }
 
 .login-modal__close {
@@ -322,340 +650,437 @@ async function handleRegister() {
   top: 18px;
   right: 18px;
   z-index: 4;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 0;
   border-radius: 999px;
-  background: rgba(17, 17, 17, 0.04);
-  color: rgba(17, 17, 17, 0.58);
+  background: transparent;
+  color: #374151;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .login-modal__close:hover {
-  background: rgba(17, 17, 17, 0.08);
-  color: #111;
+  background: #f3f4f6;
 }
 
-.login-modal__mascot {
-  position: absolute;
-  left: 88px;
-  top: -24px;
-  width: 96px;
-  height: 86px;
-  border-radius: 34px 34px 28px 28px;
-  background: linear-gradient(180deg, #ffe567 0%, #ffd100 100%);
-  box-shadow: 0 18px 40px rgba(255, 209, 0, 0.34);
-}
-
-.login-modal__mascot::before,
-.login-modal__mascot::after {
-  content: '';
-  position: absolute;
-  top: 8px;
-  width: 24px;
-  height: 18px;
-  border-radius: 18px 18px 0 0;
-  background: #ffd100;
-}
-
-.login-modal__mascot::before {
-  left: 10px;
-  transform: rotate(-18deg);
-}
-
-.login-modal__mascot::after {
-  right: 10px;
-  transform: rotate(18deg);
-}
-
-.login-modal__mascot-eye {
-  position: absolute;
-  top: 28px;
-  width: 16px;
-  height: 22px;
-  border-radius: 999px;
-  background: #111;
-}
-
-.login-modal__mascot-eye--left {
-  left: 28px;
-}
-
-.login-modal__mascot-eye--right {
-  right: 28px;
-}
-
-.login-modal__mascot-mouth {
-  position: absolute;
-  left: 50%;
-  bottom: 20px;
-  width: 28px;
-  height: 12px;
-  transform: translateX(-50%);
-  border: 3px solid #111;
-  border-top: 0;
-  border-radius: 0 0 16px 16px;
-}
-
-.login-modal__grid {
+.login-modal__body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 26px;
+  grid-template-columns: 270px 1px minmax(0, 1fr);
   align-items: stretch;
 }
 
-.login-modal__main {
-  padding: 8px 6px 0 10px;
+.login-modal__divider {
+  background: linear-gradient(180deg, transparent 0%, #e5e7eb 8%, #e5e7eb 92%, transparent 100%);
 }
 
-.login-modal__header {
-  margin-bottom: 22px;
+.login-modal__scan {
+  padding: 44px 28px 26px;
+  text-align: center;
+  background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
 }
 
-.login-modal__eyebrow {
+.login-modal__scan-header h3 {
   margin: 0;
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.18em;
-  color: rgba(17, 17, 17, 0.42);
+  color: #303133;
 }
 
-.login-modal__title {
+.login-modal__scan-header p {
   margin: 10px 0 0;
-  font: 700 34px/1.04 var(--font-display);
-  letter-spacing: -0.04em;
-  color: #111;
+  font-size: 13px;
+  color: #909399;
 }
 
-.login-modal__desc {
-  margin: 10px 0 0;
-  max-width: 46ch;
+.login-modal__qr-frame {
+  width: 176px;
+  height: 176px;
+  margin: 26px auto 18px;
+  padding: 10px;
+  border: 1px solid #dfe4ea;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.login-modal__qr-image,
+.login-modal__qr-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.login-modal__qr-image {
+  object-fit: cover;
+}
+
+.login-modal__qr-placeholder {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #3b82f6;
   font-size: 14px;
-  line-height: 1.8;
-  color: rgba(17, 17, 17, 0.58);
+  font-weight: 600;
+}
+
+.login-modal__scan-copy p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #606266;
+}
+
+.login-modal__code {
+  display: block;
+  margin-top: 12px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  color: #111827;
+}
+
+.login-modal__scan-footer {
+  margin-top: 14px;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  font-size: 12px;
+  color: #909399;
+}
+
+.login-modal__scan-status {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.login-modal__scan-status span + span::before {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 10px;
+  margin-right: 12px;
+  vertical-align: -1px;
+  background: #d1d5db;
+}
+
+.login-modal__notice {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.75;
+  color: #606266;
+}
+
+.login-modal__text-action {
+  margin-top: 16px;
+  border: 0;
+  background: transparent;
+  color: #409eff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.login-modal__text-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.login-modal__auth {
+  padding: 34px 38px 30px;
+}
+
+.login-modal__auth-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 32px;
 }
 
 .login-modal__tabs {
   display: inline-flex;
-  gap: 8px;
-  padding: 6px;
-  border-radius: 999px;
-  background: #f4f6f8;
+  align-items: center;
+  gap: 18px;
 }
 
 .login-modal__tab {
-  min-height: 42px;
-  padding: 0 20px;
   border: 0;
-  border-radius: 999px;
   background: transparent;
-  color: rgba(17, 17, 17, 0.42);
-  font: 700 15px/1 var(--font-body);
+  padding: 0;
+  font-size: 15px;
+  color: #606266;
+  cursor: pointer;
+  position: relative;
+}
+
+.login-modal__tab + .login-modal__tab::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  width: 1px;
+  height: 14px;
+  transform: translateY(-50%);
+  background: #dcdfe6;
 }
 
 .login-modal__tab.is-active {
-  background: #111;
-  color: #fff;
-  box-shadow: 0 14px 28px rgba(17, 17, 17, 0.18);
+  color: #409eff;
+  font-weight: 600;
+}
+
+.login-modal__back-link {
+  border: 0;
+  background: transparent;
+  color: #409eff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.login-modal__auth-title {
+  margin-top: 18px;
+}
+
+.login-modal__auth-title h3 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #303133;
+}
+
+.login-modal__auth-title p {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #909399;
+}
+
+.login-modal__soft-link {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #409eff;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .login-modal__form {
   margin-top: 24px;
   display: grid;
-  gap: 18px;
-}
-
-.login-modal__form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
-.login-modal__field {
+.login-modal__field-row {
   display: grid;
-  gap: 8px;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  min-height: 56px;
+  border: 1px solid #dfe4ea;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
 }
 
-.login-modal__field label,
-.login-modal__chooser p {
-  margin: 0;
+.login-modal__field-row label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-right: 1px solid #ebeef5;
+  font-size: 14px;
+  color: #303133;
+  background: #fff;
+}
+
+.login-modal__helper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.login-modal__link-btn {
+  border: 0;
+  background: transparent;
+  color: #409eff;
   font-size: 13px;
-  font-weight: 700;
-  color: rgba(17, 17, 17, 0.62);
+  cursor: pointer;
 }
 
-.login-modal__chooser {
+.login-modal__action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.login-modal__ghost-btn,
+.login-modal__primary-btn {
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.login-modal__ghost-btn {
+  border: 1px solid #dfe4ea;
+  background: #fff;
+  color: #303133;
+}
+
+.login-modal__primary-btn {
+  border: 0;
+  background: linear-gradient(90deg, #73c8f5 0%, #66c4ef 100%);
+  color: #fff;
+}
+
+.login-modal__primary-btn:disabled,
+.login-modal__ghost-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.login-modal__role-row {
   display: grid;
   gap: 10px;
 }
 
-.login-modal__chooser-row {
+.login-modal__role-row span {
+  font-size: 13px;
+  color: #909399;
+}
+
+.login-modal__role-group {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.login-modal__choice {
-  min-height: 44px;
+.login-modal__role-btn {
+  min-height: 36px;
   padding: 0 16px;
-  border: 1px solid transparent;
+  border: 1px solid #dfe4ea;
   border-radius: 999px;
-  background: #f5f7fa;
-  color: rgba(17, 17, 17, 0.6);
-  font: 700 14px/1 var(--font-body);
+  background: #fff;
+  color: #606266;
+  cursor: pointer;
 }
 
-.login-modal__choice.is-active {
-  background: rgba(255, 209, 0, 0.18);
-  color: #111;
-  border-color: rgba(255, 209, 0, 0.42);
-  box-shadow: 0 10px 22px rgba(255, 209, 0, 0.18);
+.login-modal__role-btn.is-active {
+  border-color: #7ccdf3;
+  background: #f0fbff;
+  color: #2b90c9;
 }
 
-.login-modal__submit {
-  min-height: 54px;
-  width: 100%;
-  border: 0;
-  border-radius: 999px;
-  background: #ffd100;
-  color: #111;
-  font: 700 18px/1 var(--font-body);
-  box-shadow: 0 18px 36px rgba(255, 209, 0, 0.26);
+.login-modal__extra {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #f0f2f5;
 }
 
-.login-modal__submit:hover {
-  transform: translateY(-1px);
+.login-modal__extra > span {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: #909399;
 }
 
-.login-modal__submit:disabled {
-  opacity: 0.72;
-  transform: none;
-}
-
-.login-modal__agreement {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.8;
-  color: rgba(17, 17, 17, 0.42);
-}
-
-.login-modal__aside {
-  display: grid;
-  align-content: start;
+.login-modal__extra-list {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
-.login-modal__aside-card {
-  height: 100%;
-  padding: 22px 20px;
-  border-radius: 30px;
-  background:
-    radial-gradient(circle at top right, rgba(255, 209, 0, 0.22), transparent 26%),
-    linear-gradient(180deg, #fffdf4 0%, #fff8d8 100%);
-  border: 1px solid rgba(255, 209, 0, 0.24);
-}
-
-.login-modal__aside-kicker {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: rgba(17, 17, 17, 0.4);
-}
-
-.login-modal__aside-title {
-  margin: 10px 0 0;
-  font: 700 28px/1.08 var(--font-display);
-}
-
-.login-modal__qr {
-  margin-top: 20px;
-  display: grid;
-  place-items: center;
-  border-radius: 28px;
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.04);
-}
-
-.login-modal__qr-grid {
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 5px;
-  width: 180px;
-  height: 180px;
-}
-
-.login-modal__qr-cell {
-  border-radius: 5px;
-  background: rgba(17, 17, 17, 0.08);
-}
-
-.login-modal__qr-cell.is-dark {
-  background: #111;
-}
-
-.login-modal__qr-cell.is-brand {
-  background: #ffd100;
-}
-
-.login-modal__aside-copy {
-  margin: 14px 0 0;
-  font-size: 13px;
-  line-height: 1.8;
-  color: rgba(17, 17, 17, 0.56);
-}
-
-.login-modal__admin {
-  min-height: 48px;
-  border: 0;
+.login-modal__extra-item {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
   border-radius: 999px;
-  background: #111;
-  color: #fff;
-  font: 700 14px/1 var(--font-body);
+  background: #fff;
+  color: #606266;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.login-modal__extra-item.is-active {
+  border-color: #b8e6fb;
+  background: #f0fbff;
+  color: #2b90c9;
 }
 
 :deep(.login-modal-input .el-input__wrapper) {
-  min-height: 56px;
-  border-radius: 18px !important;
-  background: #f5f7fa !important;
-  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  min-height: 54px;
+  background: transparent !important;
 }
 
-:deep(.login-modal-input .el-input__wrapper.is-focus) {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 209, 0, 0.8) !important,
-    0 0 0 5px rgba(255, 209, 0, 0.18) !important;
+:deep(.login-modal-input .el-input-group__append) {
+  border: 0;
+  background: transparent;
+  padding-right: 12px;
 }
 
-@media (max-width: 1023px) {
-  .login-modal {
-    padding: 36px 18px 18px;
-  }
+.login-modal__sms-btn {
+  border: 0;
+  background: transparent;
+  color: #409eff;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
 
-  .login-modal__grid {
+.login-modal__sms-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 900px) {
+  .login-modal__body {
     grid-template-columns: 1fr;
   }
 
-  .login-modal__mascot {
-    left: 50%;
-    transform: translateX(-50%);
+  .login-modal__divider {
+    display: none;
+  }
+
+  .login-modal__scan,
+  .login-modal__auth {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .login-modal__scan {
+    border-bottom: 1px solid #eef2f6;
   }
 }
 
-@media (max-width: 720px) {
-  .login-modal__title {
-    font-size: 28px;
+@media (max-width: 640px) {
+  .login-modal__auth {
+    padding-top: 26px;
   }
 
-  .login-modal__form-grid {
+  .login-modal__field-row {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .login-modal__action-row {
     grid-template-columns: 1fr;
   }
 
-  .login-modal__main {
-    padding: 6px 0 0;
+  .login-modal__helper-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

@@ -2,7 +2,6 @@ package com.programmer.escrow.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
@@ -13,7 +12,9 @@ public class DeveloperApplyDTO {
     @NotBlank(message = "真实姓名不能为空")
     private String realName;
 
-    @NotNull(message = "开发能力类型不能为空")
+    @NotBlank(message = "身份证号码不能为空")
+    private String idCardNo;
+
     private Integer developerRoleType;
 
     @NotBlank(message = "身份证正面不能为空")

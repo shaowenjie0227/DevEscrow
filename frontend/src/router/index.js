@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ClientLayout from '@/layouts/ClientLayout.vue'
 import DeveloperLayout from '@/layouts/DeveloperLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import LoginView from '@/views/LoginView.vue'
 import HomePageView from '@/views/public/HomePageView.vue'
 import MarketView from '@/views/public/MarketView.vue'
 import PublishEntryView from '@/views/public/PublishEntryView.vue'
@@ -39,9 +38,19 @@ import AdminDisputeListView from '@/views/admin/AdminDisputeListView.vue'
 import AdminUserListView from '@/views/admin/users/AdminUserListView.vue'
 import { useAdminAuthStore } from '@/stores/adminAuth'
 import { useAuthStore } from '@/stores/auth'
+import { fetchCurrentUser } from '@/api/modules/auth'
+import { emitAuthExpired } from '@/utils/authEvents'
 
 const routes = [
-  { path: '/', redirect: '/market' },
+  {
+    path: '/',
+    component: HomePageView,
+    props: {
+      previewCount: 3,
+      showMoreAction: true,
+      compact: true
+    }
+  },
   { path: '/market', component: MarketView },
   { path: '/market/demand/:id', component: DemandDetailView },
   { path: '/publish', component: PublishEntryView },
@@ -53,7 +62,6 @@ const routes = [
   { path: '/knowledge-base', component: KnowledgeBaseView },
   { path: '/me', component: PersonalCenterView },
   { path: '/admin-entry', component: AdminEntryView },
-  { path: '/login', component: LoginView },
   {
     path: '/client',
     component: ClientLayout,
@@ -96,18 +104,74 @@ const routes = [
   }
 ]
 
+function resolveWorkspaceRedirect(path, fullPath) {
+  if (path === '/client') {
+    return '/client/home'
+  }
+  if (path === '/developer') {
+    return '/developer/home'
+  }
+  if (path === '/me') {
+    return '/me'
+  }
+  return fullPath
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
 
-router.beforeEach((to) => {
-  if (to.path.startsWith('/client') || to.path.startsWith('/developer')) {
-    const authStore = useAuthStore()
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+
+  if (to.path === '/login') {
+    if (authStore.token) {
+      return authStore.userInfo?.redirectPath || '/me'
+    }
+
+    emitAuthExpired({
+      scope: 'user',
+      message: '请先登录后继续。',
+      redirectPath: ''
+    })
+    return '/market'
+  }
+
+  if (to.path === '/me' || to.path.startsWith('/client') || to.path.startsWith('/developer')) {
     if (!authStore.token) {
-      return '/login'
+      emitAuthExpired({
+        scope: 'user',
+        message: '请先登录后继续。',
+        redirectPath: resolveWorkspaceRedirect(to.path, to.fullPath)
+      })
+      return '/market'
     }
   }
+
+  if (to.path.startsWith('/developer')) {
+    if (authStore.userInfo?.developerStatus !== 2) {
+      try {
+        const response = await fetchCurrentUser()
+        const latest = response.data || {}
+        authStore.userInfo = {
+          ...authStore.userInfo,
+          developerStatus: latest.developerStatus ?? authStore.userInfo?.developerStatus ?? 0,
+          idVerifyStatus: latest.idVerifyStatus ?? authStore.userInfo?.idVerifyStatus ?? 0,
+          skillAuditStatus: latest.skillAuditStatus ?? authStore.userInfo?.skillAuditStatus ?? 0,
+          roles: latest.roles || authStore.userInfo?.roles || [],
+          redirectPath: latest.redirectPath || authStore.userInfo?.redirectPath || '/me'
+        }
+        window.localStorage.setItem('user_info', JSON.stringify(authStore.userInfo))
+        if (authStore.userInfo?.developerStatus !== 2) {
+          return '/me'
+        }
+      } catch {
+        return '/market'
+      }
+    }
+  }
+
   if ((to.path === '/admin' || to.path.startsWith('/admin/')) && to.path !== '/admin/login') {
     const adminAuthStore = useAdminAuthStore()
     if (!adminAuthStore.token) {
@@ -116,6 +180,7 @@ router.beforeEach((to) => {
     }
     if (to.path === '/admin') return '/admin/dashboard'
   }
+
   return true
 })
 

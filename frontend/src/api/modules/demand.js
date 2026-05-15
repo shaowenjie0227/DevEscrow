@@ -16,6 +16,14 @@ export function fetchMarketDemands() {
   return http.get('/api/developer/demands')
 }
 
+export function fetchPublicMarketDemands() {
+  return http.get('/api/market/demands')
+}
+
+export function fetchPublicMarketDemandDetail(demandId) {
+  return http.get(`/api/market/demands/${demandId}`)
+}
+
 export function fetchDemandCategories() {
   return http.get('/api/demand-categories')
 }

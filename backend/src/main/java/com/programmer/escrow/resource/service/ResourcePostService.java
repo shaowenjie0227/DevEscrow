@@ -14,6 +14,7 @@ public interface ResourcePostService {
     ResourcePostVO create(Long creatorId, ResourcePostSaveDTO dto);
     ResourcePostVO update(Long id, ResourcePostSaveDTO dto);
     AdminOperationVO updateStatus(Long id, ResourcePostStatusDTO dto);
+    AdminOperationVO delete(Long id);
     ResourcePostEntity getActive(Long id);
     void like(Long id);
     void favorite(Long id);

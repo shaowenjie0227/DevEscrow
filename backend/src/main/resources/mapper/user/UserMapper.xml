@@ -7,6 +7,7 @@
     <resultMap id="UserResultMap" type="com.programmer.escrow.user.entity.UserEntity">
         <id column="id" property="id"/>
         <result column="user_no" property="userNo"/>
+        <result column="openid" property="openid"/>
         <result column="phone" property="phone"/>
         <result column="email" property="email"/>
         <result column="password_hash" property="passwordHash"/>
@@ -14,6 +15,7 @@
         <result column="avatar_url" property="avatarUrl"/>
         <result column="user_type" property="userType"/>
         <result column="real_name" property="realName"/>
+        <result column="id_card_no" property="idCardNo"/>
         <result column="id_verify_status" property="idVerifyStatus"/>
         <result column="developer_status" property="developerStatus"/>
         <result column="skill_tags" property="skillTags"/>
@@ -35,21 +37,21 @@
     </resultMap>
 
     <sql id="BaseColumns">
-        id, user_no, phone, email, password_hash, nickname, avatar_url, user_type,
-        real_name, id_verify_status, developer_status, skill_tags, developer_role_type,
+        id, user_no, openid, phone, email, password_hash, nickname, avatar_url, user_type,
+        real_name, id_card_no, id_verify_status, developer_status, skill_tags, developer_role_type,
         id_card_front_url, id_card_back_url, selfie_url, skill_audit_status, skill_audit_reason, developer_skill_tag_ids, intro, rating,
         completed_order_count, status, last_login_at, version, created_at, updated_at
     </sql>
 
     <insert id="insert" parameterType="com.programmer.escrow.user.entity.UserEntity" useGeneratedKeys="true" keyProperty="id">
         insert into `user` (
-            user_no, phone, email, password_hash, nickname, avatar_url, user_type,
-            real_name, id_verify_status, developer_status, skill_tags, developer_role_type,
+            user_no, openid, phone, email, password_hash, nickname, avatar_url, user_type,
+            real_name, id_card_no, id_verify_status, developer_status, skill_tags, developer_role_type,
             id_card_front_url, id_card_back_url, selfie_url, skill_audit_status, skill_audit_reason, developer_skill_tag_ids, intro, rating,
             completed_order_count, status, last_login_at, version, created_at, updated_at
         ) values (
-            #{userNo}, #{phone}, #{email}, #{passwordHash}, #{nickname}, #{avatarUrl}, #{userType},
-            #{realName}, #{idVerifyStatus}, #{developerStatus}, #{skillTags}, #{developerRoleType},
+            #{userNo}, #{openid}, #{phone}, #{email}, #{passwordHash}, #{nickname}, #{avatarUrl}, #{userType},
+            #{realName}, #{idCardNo}, #{idVerifyStatus}, #{developerStatus}, #{skillTags}, #{developerRoleType},
             #{idCardFrontUrl}, #{idCardBackUrl}, #{selfieUrl}, #{skillAuditStatus}, #{skillAuditReason}, #{developerSkillTagIds}, #{intro}, #{rating},
             #{completedOrderCount}, #{status}, #{lastLoginAt}, #{version}, #{createdAt}, #{updatedAt}
         )
@@ -73,6 +75,13 @@
         select <include refid="BaseColumns"/>
         from `user`
         where email = #{email}
+        limit 1
+    </select>
+
+    <select id="selectByOpenid" resultMap="UserResultMap">
+        select <include refid="BaseColumns"/>
+        from `user`
+        where openid = #{openid}
         limit 1
     </select>
 
@@ -124,6 +133,7 @@
     <update id="updateDeveloperProfile" parameterType="com.programmer.escrow.user.entity.UserEntity">
         update `user`
         set real_name = #{realName},
+            id_card_no = #{idCardNo},
             developer_status = #{developerStatus},
             id_verify_status = #{idVerifyStatus},
             skill_tags = #{skillTags},
@@ -144,6 +154,15 @@
             phone = #{phone},
             email = #{email},
             intro = #{intro},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateWechatProfile" parameterType="com.programmer.escrow.user.entity.UserEntity">
+        update `user`
+        set openid = #{openid},
+            nickname = #{nickname},
+            avatar_url = #{avatarUrl},
             updated_at = now()
         where id = #{id}
     </update>

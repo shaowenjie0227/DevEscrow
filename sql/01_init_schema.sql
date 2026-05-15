@@ -26,6 +26,7 @@ CREATE TABLE `user` (
   `avatar_url` VARCHAR(255) DEFAULT NULL COMMENT '头像',
   `user_type` TINYINT NOT NULL COMMENT '1需求方 2开发者 3双角色',
   `real_name` VARCHAR(64) DEFAULT NULL COMMENT '真实姓名',
+  `id_card_no` VARCHAR(32) DEFAULT NULL COMMENT '身份证号码',
   `id_verify_status` TINYINT NOT NULL DEFAULT 0 COMMENT '0未认证 1审核中 2已通过 3已拒绝',
   `developer_status` TINYINT NOT NULL DEFAULT 0 COMMENT '0未申请 1审核中 2已通过 3已拒绝 4已封禁',
   `skill_tags` VARCHAR(512) DEFAULT NULL COMMENT '技能标签，逗号分隔',

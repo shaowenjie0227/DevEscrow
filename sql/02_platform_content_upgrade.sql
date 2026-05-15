@@ -8,6 +8,22 @@ SET @exists = (
   FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE()
     AND TABLE_NAME = 'user'
+    AND COLUMN_NAME = 'id_card_no'
+);
+SET @sql = IF(
+  @exists = 0,
+  "ALTER TABLE `user` ADD COLUMN `id_card_no` VARCHAR(32) DEFAULT NULL COMMENT 'identity card number' AFTER `real_name`",
+  "SELECT 1"
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @exists = (
+  SELECT COUNT(*)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'user'
     AND COLUMN_NAME = 'developer_role_type'
 );
 SET @sql = IF(

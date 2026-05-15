@@ -42,6 +42,11 @@
         where id = #{id}
     </update>
 
+    <delete id="deleteById">
+        delete from `knowledge_base`
+        where id = #{id}
+    </delete>
+
     <select id="selectById" resultMap="KnowledgeBaseResultMap">
         select <include refid="BaseColumns"/> from `knowledge_base` where id = #{id} limit 1
     </select>

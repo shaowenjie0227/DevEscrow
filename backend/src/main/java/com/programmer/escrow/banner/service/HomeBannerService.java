@@ -14,5 +14,6 @@ public interface HomeBannerService {
     HomeBannerVO create(HomeBannerSaveDTO dto);
     HomeBannerVO update(Long bannerId, HomeBannerSaveDTO dto);
     AdminOperationVO updateStatus(Long bannerId, HomeBannerStatusDTO dto);
+    AdminOperationVO delete(Long bannerId);
     HomeBannerEntity getActiveBanner(Long bannerId);
 }

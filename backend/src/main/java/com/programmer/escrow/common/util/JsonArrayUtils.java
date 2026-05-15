@@ -23,4 +23,11 @@ public final class JsonArrayUtils {
         }
         return JSONUtil.toList(JSONUtil.parseArray(json), String.class);
     }
+
+    public static List<Long> toLongList(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyList();
+        }
+        return JSONUtil.toList(JSONUtil.parseArray(json), Long.class);
+    }
 }

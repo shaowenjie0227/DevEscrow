@@ -1,20 +1,38 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElInput } from 'element-plus'
-import { Document, Plus, Search, Setting } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Document, Plus, Setting } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import LoginModal from './LoginModal.vue'
+import { logout as logoutRequest } from '@/api/modules/auth'
 import { useAuthStore } from '@/stores/auth'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const searchValue = ref('')
 const loginVisible = ref(false)
+
+const navItems = [
+  { label: '首页', to: '/' },
+  { label: '接单大厅', to: '/market' },
+  { label: '资源分享', to: '/resources' },
+  { label: '技术文章', to: '/articles' },
+  { label: '交流社区', to: '/community' },
+  { label: '技术路线图', to: '/roadmap' },
+  { label: '推荐课程', to: '/courses' },
+  { label: '知识库', to: '/knowledge-base' }
+]
 
 const displayName = computed(() => authStore.userInfo?.nickname || authStore.userInfo?.phone || '登录')
 const userRoles = computed(() => authStore.userInfo?.roles || [])
 const avatarLetter = computed(() => displayName.value.slice(0, 1).toUpperCase())
+const actionLabel = computed(() => (authStore.token ? '进入工作台' : '立即登录'))
+
+function isActive(path: string) {
+  if (path === '/') return route.path === '/'
+  return route.path === path || route.path.startsWith(`${path}/`)
+}
 
 function goTo(path: string) {
   router.push(path)
@@ -24,16 +42,9 @@ function openLogin() {
   loginVisible.value = true
 }
 
-function handleSearch() {
-  router.push({
-    path: '/market',
-    query: searchValue.value ? { keyword: searchValue.value } : undefined
-  })
-}
-
 function getWorkspaceTarget() {
-  if (userRoles.value.includes('CLIENT')) return '/client/home'
   if (userRoles.value.includes('DEVELOPER')) return '/developer/home'
+  if (authStore.token) return '/me'
   return '/market'
 }
 
@@ -59,11 +70,41 @@ function handleOrderAction() {
   openLogin()
 }
 
-function handlePersonalCommand(command: string) {
+async function handleLogout() {
+  let remoteLogoutFailed = false
+
+  try {
+    if (authStore.token) {
+      await logoutRequest()
+    }
+  } catch {
+    remoteLogoutFailed = true
+  } finally {
+    authStore.logout()
+    await router.push('/market')
+  }
+
+  if (remoteLogoutFailed) {
+    ElMessage.warning('已退出当前登录，但服务端会话注销失败')
+    return
+  }
+
+  ElMessage.success('已退出登录')
+}
+
+async function handlePersonalCommand(command: string) {
   if (command === 'admin') {
     router.push('/admin')
-  } else if (command === 'me') {
+    return
+  }
+
+  if (command === 'me') {
     router.push('/me')
+    return
+  }
+
+  if (command === 'logout') {
+    await handleLogout()
   }
 }
 </script>
@@ -72,26 +113,33 @@ function handlePersonalCommand(command: string) {
   <header class="market-nav">
     <div class="market-container">
       <div class="market-nav__inner">
-        <button class="market-brand" type="button" @click="goTo('/market')">
-          <span class="market-brand__icon">码</span>
-          <span class="market-brand__text">
-            <span class="market-brand__title">DevEscrow</span>
-            <span class="market-brand__sub">程序员接单大厅</span>
-          </span>
-        </button>
+        <div class="market-nav__brand-area">
+          <button class="market-brand" type="button" @click="goTo('/')">
+            <span class="market-brand__icon">DE</span>
+            <span class="market-brand__text">
+              <span class="market-brand__title">DevEscrow</span>
+              <span class="market-brand__sub">程序员需求担保协作市场</span>
+            </span>
+          </button>
 
-        <div class="market-search">
-          <ElInput
-            v-model="searchValue"
-            size="large"
-            placeholder="搜索需求标题、类型、技术栈、预算"
-            @keyup.enter="handleSearch"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </ElInput>
+          <span class="market-nav__pill">
+            <span class="market-nav__pill-dot" />
+            Escrow First
+          </span>
         </div>
+
+        <nav class="market-nav__links" aria-label="主导航">
+          <button
+            v-for="item in navItems"
+            :key="item.to"
+            class="market-nav__link"
+            :class="{ 'market-nav__link--active': isActive(item.to) }"
+            type="button"
+            @click="goTo(item.to)"
+          >
+            {{ item.label }}
+          </button>
+        </nav>
 
         <div class="market-nav__actions">
           <button class="market-nav__action market-nav__action--primary" type="button" @click="goTo('/publish')">
@@ -114,15 +162,17 @@ function handlePersonalCommand(command: string) {
           <el-dropdown trigger="click" @command="handlePersonalCommand">
             <button class="market-nav__user-btn market-nav__user-btn--profile" type="button">
               <span class="market-nav__avatar">{{ avatarLetter }}</span>
-              <span>个人中心</span>
+              <span>{{ displayName }}</span>
             </button>
+
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="me">个人中心</el-dropdown-item>
                 <el-dropdown-item command="admin">进入后台管理</el-dropdown-item>
                 <el-dropdown-item divided @click="handleLoginAction">
-                  {{ authStore.token ? '进入工作台' : '立即登录' }}
+                  {{ actionLabel }}
                 </el-dropdown-item>
+                <el-dropdown-item v-if="authStore.token" command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>

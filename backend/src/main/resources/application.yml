@@ -15,6 +15,10 @@ spring:
       port: 6379
       database: 0
       timeout: 3000ms
+  security:
+    user:
+      name: disabled
+      password: disabled
   jackson:
     default-property-inclusion: non_null
     time-zone: Asia/Shanghai
@@ -43,7 +47,32 @@ mybatis:
 
 app:
   auth:
-    token-expire-seconds: 604800
+    token-expire-seconds: 7200
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+  jwt:
+    issuer: programmer-escrow
+    secret: change-this-jwt-secret-to-a-very-long-random-string-2026
+    access-token-ttl-seconds: 7200
+    refresh-threshold-seconds: 1800
+  wechat:
+    mock-enabled: true
+    app-id: wx-demo-app-id
+    app-secret: wx-demo-app-secret
+    oauth-scope: snsapi_userinfo
+    callback-url: http://localhost:8080/wx/callback
+    qr-entry-url: http://localhost:8080/wx/login
+    login-entry-url: http://localhost:8080/wx/login-entry
+    subscribe-url: http://localhost:8080/wx/mock/follow
+    official-account-qr-image-url: https://dummyimage.com/320x320/16a34a/ffffff&text=Official+Account+QR
+    server-base-url: http://localhost:8080
+    official-access-token-key: WECHAT:ACCESS_TOKEN
+    mock:
+      openid: mock-openid-10001
+      nickname: Mock WeChat User
+      avatar-url: https://dummyimage.com/200x200/2563eb/ffffff&text=WX
+      subscribed: true
   upload:
     base-dir: uploads
   sequence:

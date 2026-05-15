@@ -11,6 +11,7 @@ public interface HomeBannerMapper {
     int insert(HomeBannerEntity entity);
     int update(HomeBannerEntity entity);
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+    int deleteById(@Param("id") Long id);
     HomeBannerEntity selectById(@Param("id") Long id);
     List<HomeBannerEntity> selectActiveList();
     List<HomeBannerEntity> selectAdminList();

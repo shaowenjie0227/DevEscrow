@@ -11,6 +11,7 @@ public interface KnowledgeBaseMapper {
     int insert(KnowledgeBaseEntity entity);
     int update(KnowledgeBaseEntity entity);
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+    int deleteById(@Param("id") Long id);
     KnowledgeBaseEntity selectById(@Param("id") Long id);
     List<KnowledgeBaseEntity> selectActiveList();
     List<KnowledgeBaseEntity> selectAdminList();

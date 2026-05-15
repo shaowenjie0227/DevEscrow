@@ -2,9 +2,9 @@ package com.programmer.escrow.auth.controller;
 
 import com.programmer.escrow.auth.context.UserContextHolder;
 import com.programmer.escrow.auth.dto.DeveloperApplyDTO;
-import com.programmer.escrow.auth.dto.DeveloperSkillTagSubmitDTO;
 import com.programmer.escrow.auth.dto.UserProfileUpdateDTO;
 import com.programmer.escrow.auth.service.AuthService;
+import com.programmer.escrow.auth.vo.DeveloperProfileVO;
 import com.programmer.escrow.common.api.ApiResponse;
 import com.programmer.escrow.user.entity.UserEntity;
 import com.programmer.escrow.user.mapper.UserMapper;
@@ -29,8 +29,8 @@ public class DeveloperAuthController {
     }
 
     @GetMapping
-    public ApiResponse<UserEntity> getProfile() {
-        return ApiResponse.success(authService.getCurrentUser(UserContextHolder.getRequiredUserId()));
+    public ApiResponse<DeveloperProfileVO> getProfile() {
+        return ApiResponse.success(authService.getDeveloperProfile(UserContextHolder.getRequiredUserId()));
     }
 
     @PutMapping("/basic")
@@ -43,23 +43,15 @@ public class DeveloperAuthController {
         Long userId = UserContextHolder.getRequiredUserId();
         UserEntity entity = authService.getCurrentUser(userId);
         entity.setRealName(dto.getRealName());
-        entity.setDeveloperRoleType(dto.getDeveloperRoleType());
+        entity.setIdCardNo(dto.getIdCardNo());
+        entity.setDeveloperRoleType(dto.getDeveloperRoleType() == null ? 1 : dto.getDeveloperRoleType());
         entity.setIdCardFrontUrl(dto.getIdCardFrontUrl());
         entity.setIdCardBackUrl(dto.getIdCardBackUrl());
         entity.setSelfieUrl(dto.getSelfieUrl());
         entity.setDeveloperStatus(1);
         entity.setSkillAuditStatus(1);
         entity.setIdVerifyStatus(1);
-        userMapper.updateDeveloperProfile(entity);
-        return ApiResponse.success(entity);
-    }
-
-    @PostMapping("/skill-tags")
-    public ApiResponse<UserEntity> submitSkillTags(@Valid @RequestBody DeveloperSkillTagSubmitDTO dto) {
-        Long userId = UserContextHolder.getRequiredUserId();
-        UserEntity entity = authService.getCurrentUser(userId);
-        entity.setDeveloperStatus(1);
-        entity.setSkillAuditStatus(1);
+        entity.setSkillAuditReason(null);
         entity.setDeveloperSkillTagIds(dto.getSkillTagIds().toString());
         userMapper.updateDeveloperProfile(entity);
         return ApiResponse.success(entity);

@@ -23,6 +23,7 @@ public class DemandDetailVO {
     private BigDecimal budgetMax;
     private Integer expectedDays;
     private Integer deliveryType;
+    private Integer quoteCount;
     private Integer reviewStatus;
     private Integer status;
     private String coverImage;

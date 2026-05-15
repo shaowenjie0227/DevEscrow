@@ -79,6 +79,21 @@ public class SkillTagServiceImpl implements SkillTagService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AdminOperationVO delete(Long tagId) {
+        getTagOrThrow(tagId);
+        if (skillTagMapper.countReferencedUsers(tagId) > 0) {
+            throw new BizException(400, "该技术栈已被开发者资料引用，暂时不能删除");
+        }
+        skillTagMapper.deleteById(tagId);
+        return AdminOperationVO.builder()
+                .targetId(tagId)
+                .status(0)
+                .message("技术栈已删除")
+                .build();
+    }
+
+    @Override
     public SkillTagEntity getActiveTag(Long tagId) {
         SkillTagEntity entity = getTagOrThrow(tagId);
         if (!Objects.equals(entity.getStatus(), 1)) {

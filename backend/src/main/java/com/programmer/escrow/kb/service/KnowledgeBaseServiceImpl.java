@@ -81,6 +81,18 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AdminOperationVO delete(Long id) {
+        getOrThrow(id);
+        knowledgeBaseMapper.deleteById(id);
+        return AdminOperationVO.builder()
+                .targetId(id)
+                .status(0)
+                .message("知识条目已删除")
+                .build();
+    }
+
+    @Override
     public KnowledgeBaseEntity getActive(Long id) {
         KnowledgeBaseEntity entity = getOrThrow(id);
         if (!Objects.equals(entity.getStatus(), 1)) {

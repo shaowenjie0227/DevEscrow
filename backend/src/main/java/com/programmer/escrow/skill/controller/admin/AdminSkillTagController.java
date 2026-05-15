@@ -7,6 +7,7 @@ import com.programmer.escrow.skill.dto.SkillTagStatusDTO;
 import com.programmer.escrow.skill.service.SkillTagService;
 import com.programmer.escrow.skill.vo.SkillTagVO;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,5 +46,10 @@ public class AdminSkillTagController {
     @PostMapping("/{id}/status")
     public ApiResponse<AdminOperationVO> updateStatus(@PathVariable Long id, @Valid @RequestBody SkillTagStatusDTO dto) {
         return ApiResponse.success(skillTagService.updateStatus(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<AdminOperationVO> delete(@PathVariable Long id) {
+        return ApiResponse.success(skillTagService.delete(id));
     }
 }
