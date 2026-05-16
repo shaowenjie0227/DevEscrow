@@ -4,66 +4,51 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 type BannerItem = {
   id: number
   title: string
-  subtitle?: string
+  subtitle: string
+  buttonText: string
   image?: string
+  targetUrl?: string
 }
 
 const props = defineProps<{
   items: BannerItem[]
 }>()
 
+const emit = defineEmits<{
+  action: [item: BannerItem]
+}>()
+
 const currentIndex = ref(0)
 let timer: number | undefined
 
-const currentItem = computed(() => props.items[currentIndex.value] || null)
-const hasMultiple = computed(() => props.items.length > 1)
+const currentItem = computed(() => props.items[currentIndex.value] || props.items[0] || null)
 const displayIndex = computed(() => String(currentIndex.value + 1).padStart(2, '0'))
 const totalCount = computed(() => String(Math.max(props.items.length, 1)).padStart(2, '0'))
 
-function stopAutoPlay() {
-  if (timer !== undefined) {
-    window.clearInterval(timer)
-    timer = undefined
-  }
+function next() {
+  if (!props.items.length) return
+  currentIndex.value = (currentIndex.value + 1) % props.items.length
+}
+
+function prev() {
+  if (!props.items.length) return
+  currentIndex.value = (currentIndex.value - 1 + props.items.length) % props.items.length
+}
+
+function goTo(index: number) {
+  currentIndex.value = index
 }
 
 function startAutoPlay() {
   stopAutoPlay()
-  if (!hasMultiple.value) return
-  timer = window.setInterval(() => {
-    next(false)
-  }, 5000)
+  if (props.items.length <= 1) return
+  timer = window.setInterval(next, 5000)
 }
 
-function setIndex(index: number, restart = true) {
-  if (!props.items.length) return
-  currentIndex.value = (index + props.items.length) % props.items.length
-  if (restart) startAutoPlay()
-}
-
-function next(restart = true) {
-  setIndex(currentIndex.value + 1, restart)
-}
-
-function prev() {
-  setIndex(currentIndex.value - 1)
-}
-
-function goTo(index: number) {
-  setIndex(index)
-}
-
-function getImageStyle(item?: BannerItem) {
-  if (item?.image) {
-    return {
-      backgroundImage: `url(${item.image})`,
-      backgroundPosition: 'center center'
-    }
-  }
-
-  return {
-    backgroundImage:
-      'linear-gradient(135deg, rgba(232, 237, 246, 0.96) 0%, rgba(202, 213, 233, 0.94) 48%, rgba(174, 190, 216, 0.92) 100%)'
+function stopAutoPlay() {
+  if (timer) {
+    window.clearInterval(timer)
+    timer = undefined
   }
 }
 
@@ -83,287 +68,254 @@ onBeforeUnmount(stopAutoPlay)
 
 <template>
   <section class="market-container">
-    <div class="market-banner market-banner--carousel" @mouseenter="stopAutoPlay" @mouseleave="startAutoPlay">
-      <transition name="fade-slide" mode="out-in">
-        <article v-if="currentItem" :key="currentItem.id" class="market-banner__slide">
-          <div class="market-banner__image" :style="getImageStyle(currentItem)">
-            <div class="market-banner__shade" />
-
-            <div class="market-banner__content">
-              <div class="market-banner__meta">
-                <span class="market-banner__tag">首页轮播</span>
-                <span class="market-banner__count">{{ displayIndex }} / {{ totalCount }}</span>
+    <div class="market-banner market-banner--carousel">
+      <div class="market-banner__carousel">
+        <transition name="fade-slide" mode="out-in">
+          <div v-if="currentItem" :key="currentItem.id" class="market-banner__inner market-banner__inner--carousel">
+            <div class="market-banner__copy market-banner__copy--bulletin">
+              <div class="market-bulletin__meta">
+                <span class="market-kicker">平台首页轮播</span>
+                <span class="market-bulletin__counter">{{ displayIndex }} / {{ totalCount }}</span>
               </div>
 
-              <div class="market-banner__copy">
+              <div>
                 <h1 class="market-banner__title">{{ currentItem.title }}</h1>
-                <p v-if="currentItem.subtitle" class="market-banner__desc">{{ currentItem.subtitle }}</p>
+                <p class="market-banner__desc">{{ currentItem.subtitle }}</p>
+              </div>
+
+              <div class="market-banner__cta">
+                <button class="market-btn market-btn--primary" type="button" @click="emit('action', currentItem)">
+                  {{ currentItem.buttonText || '查看详情' }}
+                </button>
+                <button class="market-btn market-btn--ghost" type="button" @click="next">下一条</button>
+              </div>
+
+              <div class="market-bulletin__note">
+                <span>左侧适合放宣传轮播、平台活动或阶段性重点信息。</span>
+              </div>
+            </div>
+
+            <div class="market-banner__visual">
+              <div
+                class="market-banner__visual-image"
+                :style="currentItem.image ? { backgroundImage: `url(${currentItem.image})` } : {}"
+              />
+              <div class="market-banner__visual-caption">
+                <strong>轮播预览</strong>
+                <span>支持管理员上传图片、设置文案和跳转链接。</span>
               </div>
             </div>
           </div>
-        </article>
+        </transition>
 
-        <article v-else key="empty" class="market-banner__slide">
-          <div class="market-banner__image market-banner__image--empty">
-            <div class="market-banner__shade" />
-
-            <div class="market-banner__content">
-              <div class="market-banner__meta">
-                <span class="market-banner__tag">首页轮播</span>
-                <span class="market-banner__count">00 / 00</span>
-              </div>
-
-              <div class="market-banner__copy">
-                <h1 class="market-banner__title">暂无轮播内容</h1>
-                <p class="market-banner__desc">后台新增轮播后，这里会按顺序展示。</p>
-              </div>
-            </div>
-          </div>
-        </article>
-      </transition>
-
-      <template v-if="hasMultiple">
-        <button class="market-banner__arrow market-banner__arrow--left" type="button" aria-label="上一张" @click="prev">
-          ‹
-        </button>
-        <button class="market-banner__arrow market-banner__arrow--right" type="button" aria-label="下一张" @click="next()">
-          ›
-        </button>
-
-        <div class="market-banner__dots">
+        <div v-if="props.items.length > 1" class="market-banner__dots">
           <button
             v-for="(item, index) in props.items"
             :key="item.id"
             type="button"
             class="market-banner__dot"
             :class="{ 'market-banner__dot--active': index === currentIndex }"
-            :aria-label="`切换到第 ${index + 1} 张`"
             @click="goTo(index)"
           />
         </div>
-      </template>
+
+        <button class="market-banner__arrow market-banner__arrow--left" type="button" @click="prev">
+          &lt;
+        </button>
+        <button class="market-banner__arrow market-banner__arrow--right" type="button" @click="next">
+          &gt;
+        </button>
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped>
 .market-banner--carousel {
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-  border: 0;
-  border-radius: 30px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(17, 19, 34, 0.08);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(247, 249, 252, 0.96), rgba(255, 255, 255, 0.94));
+  box-shadow: 0 18px 40px rgba(17, 19, 34, 0.06);
 }
 
-.market-banner--carousel::before,
-.market-banner--carousel::after {
-  display: none;
+.market-banner__inner--carousel {
+  grid-template-columns: minmax(0, 1.02fr) minmax(280px, 360px);
+  gap: 22px;
+  min-height: 320px;
+  padding: 28px 32px 56px;
 }
 
-.market-banner__slide {
-  height: 100%;
+.market-banner__copy--bulletin {
+  gap: 20px;
+  align-content: center;
 }
 
-.market-banner__image {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  width: 100%;
-  height: 100%;
-  padding: 36px;
-  background-color: #dfe6f2;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-.market-banner__image--empty {
-  background-image: linear-gradient(135deg, #edf2fb 0%, #d6dfef 52%, #becde3 100%);
-}
-
-.market-banner__shade {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 78% 18%, rgba(255, 248, 230, 0.34) 0%, rgba(255, 248, 230, 0) 32%),
-    linear-gradient(90deg, rgba(12, 18, 31, 0.44) 0%, rgba(12, 18, 31, 0.24) 34%, rgba(12, 18, 31, 0.08) 62%, rgba(12, 18, 31, 0.04) 100%),
-    linear-gradient(180deg, rgba(12, 18, 31, 0.04) 0%, rgba(12, 18, 31, 0.22) 100%);
-}
-
-.market-banner__content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 18px;
-  width: min(560px, 100%);
-  color: #fff;
-}
-
-.market-banner__meta {
+.market-bulletin__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
-.market-banner__tag,
-.market-banner__count {
+.market-kicker {
+  min-height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(17, 19, 34, 0.56);
+  letter-spacing: 0.16em;
+}
+
+.market-bulletin__counter {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.92);
+  background: rgba(17, 19, 34, 0.06);
+  color: rgba(17, 19, 34, 0.64);
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  backdrop-filter: blur(6px);
-}
-
-.market-banner__copy {
-  display: grid;
-  gap: 12px;
-  padding: 22px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 26px;
-  background: linear-gradient(135deg, rgba(11, 16, 28, 0.48) 0%, rgba(11, 16, 28, 0.2) 100%);
-  box-shadow: 0 24px 50px rgba(11, 16, 28, 0.16);
-  backdrop-filter: blur(10px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 .market-banner__title {
-  margin: 0;
   max-width: 12ch;
-  color: #fff;
-  font-size: clamp(34px, 4.6vw, 62px);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
+  font-size: clamp(32px, 3.4vw, 54px);
+  line-height: 0.98;
 }
 
 .market-banner__desc {
-  margin: 0;
-  max-width: 46ch;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 16px;
-  line-height: 1.8;
+  margin-top: 14px;
+  max-width: 52ch;
+  line-height: 1.85;
 }
 
-.market-banner__arrow {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
+.market-btn {
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+.market-btn--primary {
+  background: #111322;
+}
+
+.market-bulletin__note span {
   display: inline-flex;
+  max-width: 44ch;
   align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #111322;
-  font-size: 28px;
-  line-height: 1;
-  transform: translateY(-50%);
-  box-shadow: 0 10px 24px rgba(17, 19, 34, 0.14);
-  transition:
-    background-color 180ms ease,
-    transform 180ms ease;
+  min-height: 42px;
+  padding: 0 14px;
+  border-left: 3px solid rgba(243, 190, 37, 0.78);
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(17, 19, 34, 0.62);
+  line-height: 1.7;
 }
 
-.market-banner__arrow:hover {
-  background: #fff;
+.market-banner__visual {
+  position: relative;
+  min-height: 264px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
 }
 
-.market-banner__arrow--left {
-  left: 20px;
+.market-banner__visual-image {
+  min-height: 264px;
+  height: 100%;
+  background:
+    linear-gradient(135deg, rgba(17, 19, 34, 0.08), rgba(243, 190, 37, 0.22)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.9));
+  background-position: center;
+  background-size: cover;
 }
 
-.market-banner__arrow--right {
-  right: 20px;
+.market-banner__visual-caption {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(17, 19, 34, 0.78);
+  color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.market-banner__visual-caption strong {
+  font-size: 14px;
+}
+
+.market-banner__visual-caption span {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .market-banner__dots {
   position: absolute;
-  bottom: 24px;
-  left: 50%;
-  z-index: 2;
+  right: 24px;
+  bottom: 22px;
   display: flex;
   gap: 8px;
-  transform: translateX(-50%);
 }
 
 .market-banner__dot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.42);
-  transition:
-    width 180ms ease,
-    background-color 180ms ease;
+  background: rgba(17, 19, 34, 0.18);
 }
 
 .market-banner__dot--active {
-  width: 28px;
-  background: #fff;
+  width: 26px;
+  background: #111322;
 }
 
-@media (max-width: 960px) {
-  .market-banner__image {
-    padding: 28px;
-  }
+.market-banner__arrow {
+  top: auto;
+  bottom: 18px;
+  transform: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(17, 19, 34, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 700;
+}
 
-  .market-banner__content {
-    width: min(100%, 520px);
+.market-banner__arrow--left {
+  left: 18px;
+}
+
+.market-banner__arrow--right {
+  left: 62px;
+  right: auto;
+}
+
+@media (max-width: 1180px) {
+  .market-banner__inner--carousel {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .market-banner--carousel,
-  .market-banner__image {
-    min-height: 320px;
+  .market-banner__inner--carousel {
+    min-height: auto;
+    padding: 20px 20px 58px;
   }
 
-  .market-banner__image {
-    padding: 22px 20px 64px;
-  }
-
-  .market-banner__meta {
-    flex-wrap: wrap;
-  }
-
-  .market-banner__title {
-    max-width: none;
-    font-size: clamp(28px, 9vw, 40px);
-  }
-
-  .market-banner__desc {
-    font-size: 14px;
-    line-height: 1.7;
-  }
-
-  .market-banner__arrow {
-    top: auto;
-    bottom: 18px;
-    transform: none;
-    width: 40px;
-    height: 40px;
-    font-size: 24px;
-  }
-
-  .market-banner__arrow--left {
-    left: 16px;
-  }
-
-  .market-banner__arrow--right {
-    right: 16px;
+  .market-banner__visual,
+  .market-banner__visual-image {
+    min-height: 220px;
   }
 
   .market-banner__dots {
-    bottom: 30px;
+    right: 20px;
   }
 }
 </style>

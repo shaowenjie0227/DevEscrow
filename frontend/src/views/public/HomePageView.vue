@@ -7,9 +7,10 @@ import HeroBanner from '@/components/home/HeroBanner.vue'
 import HomeNoticeBoard from '@/components/home/HomeNoticeBoard.vue'
 import MarketBannerCarousel from '@/components/home/MarketBannerCarousel.vue'
 import StatsBar from '@/components/home/StatsBar.vue'
+import TechCategory from '@/components/home/TechCategory.vue'
 import TopNav from '@/components/home/TopNav.vue'
 import { fetchHomeBanners, fetchHomeNotices, fetchPublicMarketDemands } from '@/api/modules/demand'
-import { heroMetrics, statsBar } from '@/mock/home'
+import { heroMetrics, statsBar, techCategories } from '@/mock/home'
 
 const props = withDefaults(
   defineProps<{
@@ -61,8 +62,7 @@ const defaultNotices = [
     title: '平台规则更新说明',
     summary: '报价前请先完善交付范围、阶段目标与验收方式，减少来回确认成本。',
     targetUrl: '/publish',
-    coverUrl: '',
-    isPinned: 0
+    coverUrl: ''
   },
   {
     id: 2,
@@ -71,8 +71,7 @@ const defaultNotices = [
     title: '五月需求撮合活动',
     summary: '完成实名认证和技能审核的开发者，可优先展示在活动推荐位。',
     targetUrl: '/market',
-    coverUrl: '',
-    isPinned: 1
+    coverUrl: ''
   },
   {
     id: 3,
@@ -81,8 +80,7 @@ const defaultNotices = [
     title: '管理员可维护首页内容',
     summary: '轮播图与右侧公告活动都支持在后台独立新增、编辑、上下线。',
     targetUrl: '/admin/banners',
-    coverUrl: '',
-    isPinned: 0
+    coverUrl: ''
   }
 ]
 
@@ -116,8 +114,7 @@ async function loadNotices() {
     title: item.title,
     summary: item.summary,
     targetUrl: item.targetUrl,
-    coverUrl: item.coverUrl,
-    isPinned: item.isPinned
+    coverUrl: item.coverUrl
   }))
   notices.value = remoteItems.length ? remoteItems : defaultNotices
 }
@@ -147,6 +144,15 @@ async function loadMarketDemands() {
   }))
 }
 
+function navigateByUrl(url?: string) {
+  if (!url) return
+  if (/^https?:\/\//.test(url)) {
+    window.open(url, '_blank', 'noopener')
+    return
+  }
+  router.push(url)
+}
+
 function goPublish() {
   router.push('/publish')
 }
@@ -155,8 +161,12 @@ function goMarket() {
   router.push('/market')
 }
 
+function handleBannerAction(item: any) {
+  navigateByUrl(item.targetUrl || '/publish')
+}
+
 function handleNoticeAction(item: any) {
-  router.push(`/notices/${item.id}`)
+  navigateByUrl(item.targetUrl || '/market')
 }
 
 onMounted(async () => {
@@ -170,13 +180,14 @@ onMounted(async () => {
 
     <section class="market-container home-hero-grid">
       <div class="home-hero-grid__main">
-        <MarketBannerCarousel :items="banners" />
+        <MarketBannerCarousel :items="banners" @action="handleBannerAction" />
       </div>
       <div class="home-hero-grid__side">
         <HomeNoticeBoard :items="notices" @action="handleNoticeAction" />
       </div>
     </section>
 
+    <TechCategory :categories="techCategories" />
     <HeroBanner :metrics="heroMetrics" @publish="goPublish" @browse="goMarket" />
     <StatsBar :items="statsBar" />
 
@@ -226,41 +237,22 @@ onMounted(async () => {
 
 <style scoped>
 .home-hero-grid {
-  --home-hero-panel-height: 740px;
   display: grid;
-  grid-template-columns: minmax(0, 1.58fr) minmax(360px, 0.82fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.78fr);
+  gap: 18px;
   align-items: stretch;
-}
-
-.home-hero-grid__main {
-  height: var(--home-hero-panel-height);
-  min-height: 0;
-}
-
-.home-hero-grid__side {
-  height: var(--home-hero-panel-height);
-  min-height: 0;
 }
 
 .home-hero-grid__main :deep(.market-container) {
   width: 100%;
-  height: 100%;
 }
 
 .home-hero-grid__main :deep(.market-banner) {
-  margin-top: 12px;
-  height: calc(100% - 12px);
-  min-height: 0;
+  margin-top: 14px;
 }
 
 .home-hero-grid__side {
-  padding-top: 12px;
-}
-
-.home-hero-grid__side :deep(.home-notice-board) {
-  height: calc(100% - 12px);
-  min-height: 0;
+  padding-top: 14px;
 }
 
 .market-layout {
@@ -394,18 +386,6 @@ onMounted(async () => {
 
   .home-hero-grid__side {
     padding-top: 0;
-  }
-
-  .home-hero-grid__main,
-  .home-hero-grid__side {
-    height: auto;
-    min-height: auto;
-  }
-
-  .home-hero-grid__main :deep(.market-banner),
-  .home-hero-grid__side :deep(.home-notice-board) {
-    min-height: auto;
-    height: auto;
   }
 }
 
