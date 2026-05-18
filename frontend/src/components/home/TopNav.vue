@@ -1,17 +1,24 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Document, Plus, Setting } from '@element-plus/icons-vue'
+import { Bell, ChatDotRound, MessageBox, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import LoginModal from './LoginModal.vue'
 import { logout as logoutRequest } from '@/api/modules/auth'
+import { useChatUnreadCount } from '@/composables/useChatUnreadCount'
+import { useInboxUnreadCount } from '@/composables/useInboxUnreadCount'
 import { useAuthStore } from '@/stores/auth'
+import { resolveWorkspaceChatPath, resolveWorkspaceInboxPath } from '@/utils/workspace'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const PersonalCenterView = defineAsyncComponent(() => import('@/views/public/PersonalCenterView.vue'))
 
 const loginVisible = ref(false)
+const notificationVisible = ref(false)
+const notificationSnapshotReady = ref(false)
+const personalCenterVisible = ref(false)
 
 const navItems = [
   { label: '首页', to: '/' },
@@ -25,9 +32,58 @@ const navItems = [
 ]
 
 const displayName = computed(() => authStore.userInfo?.nickname || authStore.userInfo?.phone || '登录')
-const userRoles = computed(() => authStore.userInfo?.roles || [])
 const avatarLetter = computed(() => displayName.value.slice(0, 1).toUpperCase())
-const actionLabel = computed(() => (authStore.token ? '进入工作台' : '立即登录'))
+
+const { unreadCount: chatUnreadCount } = useChatUnreadCount(authStore)
+const { unreadCount: inboxUnreadCount } = useInboxUnreadCount(authStore)
+
+const totalUnread = computed(() => Number(chatUnreadCount.value || 0) + Number(inboxUnreadCount.value || 0))
+const workspaceChatPath = computed(() => resolveWorkspaceChatPath(authStore.userInfo))
+const workspaceInboxPath = computed(() => resolveWorkspaceInboxPath(authStore.userInfo))
+
+const chatNoticeText = computed(() => {
+  if (chatUnreadCount.value > 0) {
+    return `${chatUnreadCount.value} 条未读聊天，适合直接回工作台继续沟通。`
+  }
+  return '项目沟通、报价确认和交付往来会集中留在聊天会话里。'
+})
+
+const inboxNoticeText = computed(() => {
+  if (inboxUnreadCount.value > 0) {
+    return `${inboxUnreadCount.value} 封未读站内信，建议优先查看管理员提醒。`
+  }
+  return '管理员通知、审核提醒和补充说明会统一进入站内信。'
+})
+
+watch(
+  () => authStore.token,
+  (token) => {
+    if (!token) {
+      notificationVisible.value = false
+      notificationSnapshotReady.value = false
+      personalCenterVisible.value = false
+    }
+  }
+)
+
+watch([chatUnreadCount, inboxUnreadCount], ([chatCount, inboxCount], [prevChatCount, prevInboxCount]) => {
+  if (!authStore.token) {
+    return
+  }
+
+  if (!notificationSnapshotReady.value) {
+    notificationSnapshotReady.value = true
+    return
+  }
+
+  if (Number(chatCount || 0) > Number(prevChatCount || 0)) {
+    ElMessage.info('你收到了新的聊天消息')
+  }
+
+  if (Number(inboxCount || 0) > Number(prevInboxCount || 0)) {
+    ElMessage.info('你收到了新的站内信')
+  }
+})
 
 function isActive(path: string) {
   if (path === '/') return route.path === '/'
@@ -42,33 +98,6 @@ function openLogin() {
   loginVisible.value = true
 }
 
-function getWorkspaceTarget() {
-  if (userRoles.value.includes('DEVELOPER')) return '/developer/home'
-  if (authStore.token) return '/me'
-  return '/market'
-}
-
-function getOrderTarget() {
-  if (userRoles.value.includes('CLIENT')) return '/client/orders'
-  if (userRoles.value.includes('DEVELOPER')) return '/developer/orders'
-  return '/market'
-}
-
-function handleLoginAction() {
-  if (authStore.token) {
-    router.push(getWorkspaceTarget())
-    return
-  }
-  openLogin()
-}
-
-function handleOrderAction() {
-  if (authStore.token) {
-    router.push(getOrderTarget())
-    return
-  }
-  openLogin()
-}
 
 async function handleLogout() {
   let remoteLogoutFailed = false
@@ -93,19 +122,49 @@ async function handleLogout() {
 }
 
 async function handlePersonalCommand(command: string) {
-  if (command === 'admin') {
-    router.push('/admin')
+
+  if (command === 'me') {
+    if (!authStore.token) {
+      openLogin()
+      return
+    }
+    personalCenterVisible.value = true
     return
   }
 
-  if (command === 'me') {
-    router.push('/me')
+  if (command === 'client') {
+    if (!authStore.token) {
+      openLogin()
+      return
+    }
+    router.push('/client/home')
+    return
+  }
+
+  if (command === 'developer') {
+    if (!authStore.token) {
+      openLogin()
+      return
+    }
+    router.push('/developer/home')
     return
   }
 
   if (command === 'logout') {
     await handleLogout()
   }
+}
+
+function formatUnreadCount(count: number) {
+  if (count > 99) {
+    return '99+'
+  }
+  return String(count)
+}
+
+function openNoticeTarget(path: string) {
+  notificationVisible.value = false
+  router.push(path)
 }
 </script>
 
@@ -121,24 +180,22 @@ async function handlePersonalCommand(command: string) {
               <span class="market-brand__sub">程序员需求担保协作市场</span>
             </span>
           </button>
-
-          <!-- <span class="market-nav__pill">
-            <span class="market-nav__pill-dot" />
-            Escrow First -->
-          <!-- </span> -->
         </div>
 
         <nav class="market-nav__links" aria-label="主导航">
-          <button
-            v-for="item in navItems"
-            :key="item.to"
-            class="market-nav__link"
-            :class="{ 'market-nav__link--active': isActive(item.to) }"
-            type="button"
-            @click="goTo(item.to)"
-          >
-            {{ item.label }}
-          </button>
+          <span class="market-nav__links-label">Sections</span>
+          <div class="market-nav__links-track">
+            <button
+              v-for="item in navItems"
+              :key="item.to"
+              class="market-nav__link"
+              :class="{ 'market-nav__link--active': isActive(item.to) }"
+              type="button"
+              @click="goTo(item.to)"
+            >
+              {{ item.label }}
+            </button>
+          </div>
         </nav>
 
         <div class="market-nav__actions">
@@ -146,18 +203,61 @@ async function handlePersonalCommand(command: string) {
             <el-icon><Plus /></el-icon>
             发布需求
           </button>
-          <!-- <button class="market-nav__action" type="button" @click="goTo('/market')">接单大厅</button> -->
-          <!-- <button class="market-nav__action" type="button" @click="goTo('/admin')">
-            <el-icon><Setting /></el-icon>
-            后台管理
-          </button> -->
         </div>
 
         <div class="market-nav__user">
-          <!-- <button class="market-nav__user-btn" type="button" @click="handleOrderAction">
-            <el-icon><Document /></el-icon>
-            <span>订单</span>
-          </button> -->
+          <el-popover
+            v-if="authStore.token"
+            v-model:visible="notificationVisible"
+            placement="bottom-end"
+            :width="360"
+            trigger="click"
+            popper-class="market-notice-popover"
+          >
+            <template #reference>
+              <button class="market-nav__user-btn market-nav__user-btn--notice" type="button">
+                <span class="market-nav__notice-icon">
+                  <el-icon><Bell /></el-icon>
+                </span>
+                <span>通知</span>
+                <em v-if="totalUnread > 0" class="market-nav__notice-dot">{{ formatUnreadCount(totalUnread) }}</em>
+              </button>
+            </template>
+
+            <div class="market-notice-panel">
+              <div class="market-notice-panel__head">
+                <span class="market-notice-panel__eyebrow">Notification Hub</span>
+                <strong>{{ totalUnread > 0 ? `${formatUnreadCount(totalUnread)} 条新消息` : '暂时没有新消息' }}</strong>
+                <p>首页右上角会实时汇总聊天和站内信，避免你错过协作进展。</p>
+              </div>
+
+              <button class="market-notice-card" type="button" @click="openNoticeTarget(workspaceInboxPath)">
+                <span class="market-notice-card__icon market-notice-card__icon--mail">
+                  <el-icon><MessageBox /></el-icon>
+                </span>
+                <span class="market-notice-card__copy">
+                  <strong>站内信</strong>
+                  <p>{{ inboxNoticeText }}</p>
+                </span>
+                <em class="market-notice-card__badge" :class="{ 'is-empty': inboxUnreadCount === 0 }">
+                  {{ formatUnreadCount(inboxUnreadCount) }}
+                </em>
+              </button>
+
+              <button class="market-notice-card" type="button" @click="openNoticeTarget(workspaceChatPath)">
+                <span class="market-notice-card__icon market-notice-card__icon--chat">
+                  <el-icon><ChatDotRound /></el-icon>
+                </span>
+                <span class="market-notice-card__copy">
+                  <strong>聊天会话</strong>
+                  <p>{{ chatNoticeText }}</p>
+                </span>
+                <em class="market-notice-card__badge" :class="{ 'is-empty': chatUnreadCount === 0 }">
+                  {{ formatUnreadCount(chatUnreadCount) }}
+                </em>
+              </button>
+            </div>
+          </el-popover>
 
           <el-dropdown trigger="click" @command="handlePersonalCommand">
             <button class="market-nav__user-btn market-nav__user-btn--profile" type="button">
@@ -168,10 +268,8 @@ async function handlePersonalCommand(command: string) {
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="me">个人中心</el-dropdown-item>
-                <el-dropdown-item command="admin">进入后台管理</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLoginAction">
-                  {{ actionLabel }}
-                </el-dropdown-item>
+                <el-dropdown-item divided command="client">用户工作台</el-dropdown-item>
+                <el-dropdown-item command="developer">开发者工作台</el-dropdown-item>
                 <el-dropdown-item v-if="authStore.token" command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -181,5 +279,34 @@ async function handlePersonalCommand(command: string) {
     </div>
 
     <LoginModal v-model="loginVisible" />
+    <el-dialog
+      v-model="personalCenterVisible"
+      title="个人中心"
+      width="1100px"
+      destroy-on-close
+      class="personal-center-dialog"
+    >
+      <PersonalCenterView v-if="personalCenterVisible" :show-back-button="false" embedded />
+    </el-dialog>
   </header>
 </template>
+
+<style scoped>
+.personal-center-dialog :deep(.el-dialog) {
+  width: min(1100px, calc(100vw - 32px));
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.personal-center-dialog :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 20px 20px 0;
+}
+
+.personal-center-dialog :deep(.el-dialog__body) {
+  max-height: calc(100vh - 140px);
+  padding: 20px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+</style>

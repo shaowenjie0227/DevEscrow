@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.inbox.mapper.InboxMessageMapper">
+
+    <resultMap id="InboxMessageResultMap" type="com.programmer.escrow.inbox.entity.InboxMessageEntity">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="admin_id" property="adminId"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="action_url" property="actionUrl"/>
+        <result column="read_status" property="readStatus"/>
+        <result column="read_at" property="readAt"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, user_id, admin_id, title, content, action_url, read_status, read_at, status, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.inbox.entity.InboxMessageEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `user_inbox_message` (
+            user_id, admin_id, title, content, action_url, read_status, read_at, status, created_at, updated_at
+        ) values (
+            #{userId}, #{adminId}, #{title}, #{content}, #{actionUrl}, #{readStatus}, #{readAt}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="InboxMessageResultMap">
+        select <include refid="BaseColumns"/>
+        from `user_inbox_message`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByUserId" resultMap="InboxMessageResultMap">
+        select <include refid="BaseColumns"/>
+        from `user_inbox_message`
+        where user_id = #{userId}
+          and status = 1
+        order by read_status asc, created_at desc, id desc
+    </select>
+
+    <select id="countUnreadByUserId" resultType="int">
+        select count(1)
+        from `user_inbox_message`
+        where user_id = #{userId}
+          and status = 1
+          and read_status = 0
+    </select>
+
+    <select id="selectLatestUnreadByUserId" resultMap="InboxMessageResultMap">
+        select <include refid="BaseColumns"/>
+        from `user_inbox_message`
+        where user_id = #{userId}
+          and status = 1
+          and read_status = 0
+        order by created_at desc, id desc
+        limit 1
+    </select>
+
+    <update id="updateRead">
+        update `user_inbox_message`
+        set read_status = 1,
+            read_at = #{readAt},
+            updated_at = now()
+        where id = #{id}
+          and user_id = #{userId}
+          and status = 1
+          and read_status = 0
+    </update>
+
+    <update id="updateAllRead">
+        update `user_inbox_message`
+        set read_status = 1,
+            read_at = #{readAt},
+            updated_at = now()
+        where user_id = #{userId}
+          and status = 1
+          and read_status = 0
+    </update>
+</mapper>

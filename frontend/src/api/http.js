@@ -21,7 +21,11 @@ function isAdminRequest(url = '') {
 }
 
 function isLoginRequest(url = '') {
-  return url === '/api/auth/login' || url === '/api/admin/auth/login'
+  return (
+    url === '/api/auth/login' ||
+    url === '/api/auth/email-code/login' ||
+    url === '/api/admin/auth/login'
+  )
 }
 
 function shouldHandleAuthFailure(code, url = '') {

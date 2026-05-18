@@ -7,13 +7,27 @@ function toText(value: unknown, fallback = '') {
   return normalized || fallback
 }
 
+function getOrderTypeLabel(orderType: number) {
+  return orderType === 2 ? '文档单' : '开发单'
+}
+
+function getDeliveryTypeLabel(deliveryType: number) {
+  return deliveryType === 2 ? '分阶段交付' : '整单交付'
+}
+
+function getUrgentLabel(isUrgent: boolean, urgentBonus: number) {
+  if (!isUrgent) return '常规节奏'
+  if (urgentBonus > 0) return `加急 +${urgentBonus.toLocaleString()}`
+  return '加急需求'
+}
+
 export function formatBudget(min: unknown, max: unknown) {
   const minValue = Number(min || 0)
   const maxValue = Number(max || 0)
 
   if (!minValue && !maxValue) return '预算待沟通'
-  if (!maxValue || minValue === maxValue) return `¥${minValue.toLocaleString()}`
-  return `¥${minValue.toLocaleString()} - ¥${maxValue.toLocaleString()}`
+  if (!maxValue || minValue === maxValue) return `￥${minValue.toLocaleString()}`
+  return `￥${minValue.toLocaleString()} - ￥${maxValue.toLocaleString()}`
 }
 
 export function normalizeMarketDemand(item: any) {
@@ -31,9 +45,14 @@ export function normalizeMarketDemand(item: any) {
   const budgetMax = Number(item?.budgetMax || 0)
   const expectedDays = Number(item?.expectedDays || 0)
   const deliveryType = Number(item?.deliveryType || 1)
+  const orderType = Number(item?.orderType || 1)
+  const isUrgent = Boolean(item?.isUrgent)
+  const urgentBonus = Number(item?.urgentBonus || 0)
   const demandNo = toText(item?.demandNo, `NO.${String(item?.id || '').padStart(3, '0')}`)
   const categoryId = item?.categoryId == null ? null : String(item.categoryId)
-  const deliveryLabel = deliveryType === 2 ? '分阶段交付' : '整单交付'
+  const deliveryLabel = getDeliveryTypeLabel(deliveryType)
+  const orderTypeLabel = getOrderTypeLabel(orderType)
+  const urgentLabel = getUrgentLabel(isUrgent, urgentBonus)
 
   return {
     id: Number(item?.id || 0),
@@ -54,15 +73,21 @@ export function normalizeMarketDemand(item: any) {
     postedAt: '最新',
     tags: [
       { label: category },
-      { label: deliveryLabel }
+      { label: deliveryLabel },
+      { label: orderTypeLabel }
     ],
     highlights: [
       '已审核公开',
       deliveryLabel,
+      orderTypeLabel,
+      urgentLabel,
       expectedDays > 0 ? `${expectedDays} 天交付预期` : '工期可协商'
     ],
     deliverables: deliverables.length ? deliverables : ['交付范围可沟通拆分'],
-    contactHint: '站内快速沟通',
+    contactHint: isUrgent ? '可优先沟通' : '站内快速沟通',
+    orderType,
+    isUrgent,
+    urgentBonus,
     deliveryType,
     reviewStatus: Number(item?.reviewStatus || 0),
     status: Number(item?.status || 0),
@@ -73,6 +98,8 @@ export function normalizeMarketDemand(item: any) {
       detail,
       demandNo,
       deliveryLabel,
+      orderTypeLabel,
+      urgentLabel,
       ...deliverables
     ]
       .join(' ')

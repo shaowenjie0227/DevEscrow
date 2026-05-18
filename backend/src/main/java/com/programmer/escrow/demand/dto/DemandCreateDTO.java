@@ -1,5 +1,6 @@
 package com.programmer.escrow.demand.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.programmer.escrow.demand.model.DemandFileItem;
 import com.programmer.escrow.demand.model.DemandStagePlan;
 import jakarta.validation.Valid;
@@ -14,30 +15,38 @@ import java.util.List;
 @Data
 public class DemandCreateDTO {
 
-    @NotBlank(message = "标题不能为空")
+    @NotBlank(message = "title is required")
     private String title;
 
-    @NotBlank(message = "摘要不能为空")
+    @NotBlank(message = "summary is required")
     private String summary;
 
-    @NotBlank(message = "详细描述不能为空")
+    @NotBlank(message = "detail is required")
     private String detail;
 
-    @NotNull(message = "分类不能为空")
+    @NotNull(message = "categoryId is required")
     private Long categoryId;
 
-    @NotNull(message = "预算下限不能为空")
-    @DecimalMin(value = "0.00", message = "预算下限不能小于0")
+    private Integer orderType;
+
+    @JsonAlias("isUrgent")
+    private Boolean urgent;
+
+    @DecimalMin(value = "0.00", message = "urgentBonus must be greater than or equal to 0")
+    private BigDecimal urgentBonus;
+
+    @NotNull(message = "budgetMin is required")
+    @DecimalMin(value = "0.00", message = "budgetMin must be greater than or equal to 0")
     private BigDecimal budgetMin;
 
-    @NotNull(message = "预算上限不能为空")
-    @DecimalMin(value = "0.00", message = "预算上限不能小于0")
+    @NotNull(message = "budgetMax is required")
+    @DecimalMin(value = "0.00", message = "budgetMax must be greater than or equal to 0")
     private BigDecimal budgetMax;
 
-    @NotNull(message = "预计工期不能为空")
+    @NotNull(message = "expectedDays is required")
     private Integer expectedDays;
 
-    @NotNull(message = "交付类型不能为空")
+    @NotNull(message = "deliveryType is required")
     private Integer deliveryType;
 
     @Valid

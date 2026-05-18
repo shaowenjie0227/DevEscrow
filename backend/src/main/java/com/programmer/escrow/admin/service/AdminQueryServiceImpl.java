@@ -20,6 +20,7 @@ import com.programmer.escrow.user.entity.UserEntity;
 import com.programmer.escrow.user.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -109,6 +110,8 @@ public class AdminQueryServiceImpl implements AdminQueryService {
                 .developerSkillTagIds(entity.getDeveloperSkillTagIds())
                 .skillAuditReason(entity.getSkillAuditReason())
                 .status(entity.getStatus())
+                .banReason(entity.getBanReason())
+                .banExpiresAt(entity.getBanExpiresAt())
                 .build();
     }
 
@@ -117,18 +120,30 @@ public class AdminQueryServiceImpl implements AdminQueryService {
         List<DemandFileItem> images = sanitizeFiles(payload.getImages());
         List<DemandFileItem> attachments = sanitizeFiles(payload.getAttachments());
         List<DemandStagePlan> stagePlans = sanitizeStages(payload.getStagePlans());
+        UserEntity publisher = entity.getPublisherId() == null ? null : userMapper.selectById(entity.getPublisherId());
         return DemandDetailVO.builder()
                 .id(entity.getId())
                 .demandNo(entity.getDemandNo())
+                .publisherId(entity.getPublisherId())
+                .publisherNickname(publisher == null ? null : publisher.getNickname())
+                .publisherAvatarUrl(publisher == null ? null : publisher.getAvatarUrl())
+                .publisherUserNo(publisher == null ? null : publisher.getUserNo())
+                .publisherRealName(publisher == null ? null : publisher.getRealName())
+                .publisherPhone(publisher == null ? null : publisher.getPhone())
+                .publisherEmail(publisher == null ? null : publisher.getEmail())
                 .title(entity.getTitle())
                 .summary(entity.getSummary())
                 .detail(entity.getDetail())
                 .categoryId(entity.getCategoryId())
                 .category(entity.getCategory())
+                .orderType(payload.getOrderType() == null ? 1 : payload.getOrderType())
+                .urgent(Boolean.TRUE.equals(payload.getUrgent()))
+                .urgentBonus(payload.getUrgentBonus() == null ? BigDecimal.ZERO : payload.getUrgentBonus())
                 .budgetMin(entity.getBudgetMin())
                 .budgetMax(entity.getBudgetMax())
                 .expectedDays(entity.getExpectedDays())
                 .deliveryType(entity.getDeliveryType())
+                .quoteCount(entity.getQuoteCount())
                 .reviewStatus(entity.getReviewStatus())
                 .status(entity.getStatus())
                 .rejectReason(entity.getRejectReason())

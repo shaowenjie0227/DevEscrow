@@ -30,6 +30,8 @@
         <result column="rating" property="rating"/>
         <result column="completed_order_count" property="completedOrderCount"/>
         <result column="status" property="status"/>
+        <result column="ban_reason" property="banReason"/>
+        <result column="ban_expires_at" property="banExpiresAt"/>
         <result column="last_login_at" property="lastLoginAt"/>
         <result column="version" property="version"/>
         <result column="created_at" property="createdAt"/>
@@ -40,7 +42,7 @@
         id, user_no, openid, phone, email, password_hash, nickname, avatar_url, user_type,
         real_name, id_card_no, id_verify_status, developer_status, skill_tags, developer_role_type,
         id_card_front_url, id_card_back_url, selfie_url, skill_audit_status, skill_audit_reason, developer_skill_tag_ids, intro, rating,
-        completed_order_count, status, last_login_at, version, created_at, updated_at
+        completed_order_count, status, ban_reason, ban_expires_at, last_login_at, version, created_at, updated_at
     </sql>
 
     <insert id="insert" parameterType="com.programmer.escrow.user.entity.UserEntity" useGeneratedKeys="true" keyProperty="id">
@@ -48,12 +50,12 @@
             user_no, openid, phone, email, password_hash, nickname, avatar_url, user_type,
             real_name, id_card_no, id_verify_status, developer_status, skill_tags, developer_role_type,
             id_card_front_url, id_card_back_url, selfie_url, skill_audit_status, skill_audit_reason, developer_skill_tag_ids, intro, rating,
-            completed_order_count, status, last_login_at, version, created_at, updated_at
+            completed_order_count, status, ban_reason, ban_expires_at, last_login_at, version, created_at, updated_at
         ) values (
             #{userNo}, #{openid}, #{phone}, #{email}, #{passwordHash}, #{nickname}, #{avatarUrl}, #{userType},
             #{realName}, #{idCardNo}, #{idVerifyStatus}, #{developerStatus}, #{skillTags}, #{developerRoleType},
             #{idCardFrontUrl}, #{idCardBackUrl}, #{selfieUrl}, #{skillAuditStatus}, #{skillAuditReason}, #{developerSkillTagIds}, #{intro}, #{rating},
-            #{completedOrderCount}, #{status}, #{lastLoginAt}, #{version}, #{createdAt}, #{updatedAt}
+            #{completedOrderCount}, #{status}, #{banReason}, #{banExpiresAt}, #{lastLoginAt}, #{version}, #{createdAt}, #{updatedAt}
         )
     </insert>
 
@@ -116,6 +118,32 @@
         order by id desc
     </select>
 
+    <select id="countByStatus" resultType="long">
+        select count(1)
+        from `user`
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <select id="countCertifiedDevelopers" resultType="long">
+        select count(1)
+        from `user`
+        where status = #{status}
+          and developer_status = #{developerStatus}
+    </select>
+
+    <select id="selectExpiredBannedUsers" resultMap="UserResultMap">
+        select <include refid="BaseColumns"/>
+        from `user`
+        where status = 2
+          and ban_expires_at is not null
+          and ban_expires_at &lt;= now()
+        order by ban_expires_at asc, id asc
+    </select>
+
     <update id="updateLastLoginAt">
         update `user`
         set last_login_at = now(),
@@ -128,6 +156,36 @@
         set status = #{status},
             updated_at = now()
         where id = #{id}
+    </update>
+
+    <update id="updateBanStatus">
+        update `user`
+        set status = #{status},
+            ban_reason = #{banReason},
+            ban_expires_at = #{banExpiresAt},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="clearBanStatus">
+        update `user`
+        set status = 1,
+            ban_reason = null,
+            ban_expires_at = null,
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="releaseExpiredBanById">
+        update `user`
+        set status = 1,
+            ban_reason = null,
+            ban_expires_at = null,
+            updated_at = now()
+        where id = #{id}
+          and status = 2
+          and ban_expires_at is not null
+          and ban_expires_at &lt;= now()
     </update>
 
     <update id="updateDeveloperProfile" parameterType="com.programmer.escrow.user.entity.UserEntity">

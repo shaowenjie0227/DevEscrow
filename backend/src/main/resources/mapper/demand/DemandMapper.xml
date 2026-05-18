@@ -73,6 +73,13 @@
         order by publish_at desc, id desc
     </select>
 
+    <select id="countMarketDemands" resultType="long">
+        select count(1)
+        from `demand`
+        where review_status = 1
+          and status in (2, 3)
+    </select>
+
     <select id="selectAdminList" resultMap="DemandResultMap">
         select <include refid="BaseColumns"/>
         from `demand`

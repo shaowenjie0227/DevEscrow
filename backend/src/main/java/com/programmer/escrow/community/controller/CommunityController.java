@@ -1,12 +1,13 @@
 package com.programmer.escrow.community.controller;
 
+import com.programmer.escrow.auth.context.LoginUser;
 import com.programmer.escrow.auth.context.UserContextHolder;
+import com.programmer.escrow.common.api.ApiResponse;
 import com.programmer.escrow.community.dto.CommunityPostCreateDTO;
 import com.programmer.escrow.community.dto.CommunityReplyCreateDTO;
 import com.programmer.escrow.community.service.CommunityService;
 import com.programmer.escrow.community.vo.CommunityPostVO;
 import com.programmer.escrow.community.vo.CommunityReplyVO;
-import com.programmer.escrow.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,8 +30,16 @@ public class CommunityController {
     }
 
     @GetMapping
-    public ApiResponse<List<CommunityPostVO>> listPosts(@RequestParam(required = false) String sort) {
-        return ApiResponse.success(communityService.listPosts(sort));
+    public ApiResponse<List<CommunityPostVO>> listPosts(@RequestParam(required = false) String sort,
+                                                        @RequestParam(required = false) String forumName,
+                                                        @RequestParam(required = false) String keyword,
+                                                        @RequestParam(required = false) Boolean mine) {
+        return ApiResponse.success(communityService.listPosts(sort, forumName, keyword, mine, currentUserIdOrNull()));
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<CommunityPostVO> getPost(@PathVariable Long id) {
+        return ApiResponse.success(communityService.getPost(id, currentUserIdOrNull()));
     }
 
     @PostMapping
@@ -39,15 +48,13 @@ public class CommunityController {
     }
 
     @PostMapping("/{id}/like")
-    public ApiResponse<Void> likePost(@PathVariable Long id) {
-        communityService.likePost(id);
-        return ApiResponse.success(null);
+    public ApiResponse<CommunityPostVO> likePost(@PathVariable Long id) {
+        return ApiResponse.success(communityService.toggleLikePost(UserContextHolder.getRequiredUserId(), id));
     }
 
     @PostMapping("/{id}/favorite")
-    public ApiResponse<Void> favoritePost(@PathVariable Long id) {
-        communityService.favoritePost(id);
-        return ApiResponse.success(null);
+    public ApiResponse<CommunityPostVO> favoritePost(@PathVariable Long id) {
+        return ApiResponse.success(communityService.toggleFavoritePost(UserContextHolder.getRequiredUserId(), id));
     }
 
     @GetMapping("/{id}/replies")
@@ -58,5 +65,10 @@ public class CommunityController {
     @PostMapping("/{id}/replies")
     public ApiResponse<CommunityReplyVO> createReply(@PathVariable Long id, @Valid @RequestBody CommunityReplyCreateDTO dto) {
         return ApiResponse.success(communityService.createReply(UserContextHolder.getRequiredUserId(), id, dto));
+    }
+
+    private Long currentUserIdOrNull() {
+        LoginUser loginUser = UserContextHolder.get();
+        return loginUser == null ? null : loginUser.getUserId();
     }
 }

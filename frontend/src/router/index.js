@@ -1,46 +1,52 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ClientLayout from '@/layouts/ClientLayout.vue'
-import DeveloperLayout from '@/layouts/DeveloperLayout.vue'
-import AdminLayout from '@/layouts/AdminLayout.vue'
-import HomePageView from '@/views/public/HomePageView.vue'
-import HomeNoticeDetailView from '@/views/public/HomeNoticeDetailView.vue'
-import MarketView from '@/views/public/MarketView.vue'
-import PublishEntryView from '@/views/public/PublishEntryView.vue'
-import AdminEntryView from '@/views/public/AdminEntryView.vue'
-import DemandDetailView from '@/views/public/DemandDetailView.vue'
-import PersonalCenterView from '@/views/public/PersonalCenterView.vue'
-import ResourceShareView from '@/views/public/content/ResourceShareView.vue'
-import CommunityView from '@/views/public/content/CommunityView.vue'
-import RoadmapView from '@/views/public/content/RoadmapView.vue'
-import ArticleListView from '@/views/public/content/ArticleListView.vue'
-import CourseListView from '@/views/public/content/CourseListView.vue'
-import KnowledgeBaseView from '@/views/public/content/KnowledgeBaseView.vue'
-import ClientHomeView from '@/views/client/ClientHomeView.vue'
-import ClientDemandListView from '@/views/client/ClientDemandListView.vue'
-import ClientDemandCreateView from '@/views/client/ClientDemandCreateView.vue'
-import ClientOrderListView from '@/views/client/ClientOrderListView.vue'
-import ClientDisputeListView from '@/views/client/ClientDisputeListView.vue'
-import DeveloperHomeView from '@/views/developer/DeveloperHomeView.vue'
-import DeveloperMarketView from '@/views/developer/DeveloperMarketView.vue'
-import DeveloperQuoteListView from '@/views/developer/DeveloperQuoteListView.vue'
-import DeveloperOrderListView from '@/views/developer/DeveloperOrderListView.vue'
-import DeveloperDisputeListView from '@/views/developer/DeveloperDisputeListView.vue'
-import DeveloperProfileView from '@/views/developer/DeveloperProfileView.vue'
-import AdminLoginView from '@/views/admin/AdminLoginView.vue'
-import AdminDashboardView from '@/views/admin/AdminDashboardView.vue'
-import BannerManageView from '@/views/admin/BannerManageView.vue'
-import ResourceManageView from '@/views/admin/ResourceManageView.vue'
-import SkillTagManageView from '@/views/admin/SkillTagManageView.vue'
-import DemandCategoryManageView from '@/views/admin/DemandCategoryManageView.vue'
-import KnowledgeBaseManageView from '@/views/admin/KnowledgeBaseManageView.vue'
-import AdminDemandAuditView from '@/views/admin/AdminDemandAuditView.vue'
-import AdminOrderListView from '@/views/admin/AdminOrderListView.vue'
-import AdminDisputeListView from '@/views/admin/AdminDisputeListView.vue'
-import AdminUserListView from '@/views/admin/users/AdminUserListView.vue'
 import { useAdminAuthStore } from '@/stores/adminAuth'
 import { useAuthStore } from '@/stores/auth'
 import { fetchCurrentUser } from '@/api/modules/auth'
 import { emitAuthExpired } from '@/utils/authEvents'
+
+const ClientLayout = () => import('@/layouts/ClientLayout.vue')
+const DeveloperLayout = () => import('@/layouts/DeveloperLayout.vue')
+const AdminLayout = () => import('@/layouts/AdminLayout.vue')
+const HomePageView = () => import('@/views/public/HomePageView.vue')
+const HomeNoticeDetailView = () => import('@/views/public/HomeNoticeDetailView.vue')
+const MarketView = () => import('@/views/public/MarketView.vue')
+const PublishEntryView = () => import('@/views/public/PublishEntryView.vue')
+const AdminEntryView = () => import('@/views/public/AdminEntryView.vue')
+const DemandDetailView = () => import('@/views/public/DemandDetailView.vue')
+const PersonalCenterView = () => import('@/views/public/PersonalCenterView.vue')
+const ChatCenterView = () => import('@/views/shared/ChatCenterView.vue')
+const InboxView = () => import('@/views/shared/InboxView.vue')
+const ResourceShareView = () => import('@/views/public/content/ResourceShareView.vue')
+const CommunityView = () => import('@/views/public/content/CommunityView.vue')
+const CommunityPostDetailView = () => import('@/views/public/content/CommunityPostDetailView.vue')
+const RoadmapView = () => import('@/views/public/content/RoadmapView.vue')
+const ArticleListView = () => import('@/views/public/content/ArticleListView.vue')
+const CourseListView = () => import('@/views/public/content/CourseListView.vue')
+const KnowledgeBaseView = () => import('@/views/public/content/KnowledgeBaseView.vue')
+const ClientHomeView = () => import('@/views/client/ClientHomeView.vue')
+const ClientDemandListView = () => import('@/views/client/ClientDemandListView.vue')
+const ClientDemandCreateView = () => import('@/views/client/ClientDemandCreateView.vue')
+const ClientOrderListView = () => import('@/views/client/ClientOrderListView.vue')
+const ClientDisputeListView = () => import('@/views/client/ClientDisputeListView.vue')
+const DeveloperHomeView = () => import('@/views/developer/DeveloperHomeView.vue')
+const DeveloperMarketView = () => import('@/views/developer/DeveloperMarketView.vue')
+const DeveloperQuoteListView = () => import('@/views/developer/DeveloperQuoteListView.vue')
+const DeveloperOrderListView = () => import('@/views/developer/DeveloperOrderListView.vue')
+const DeveloperDisputeListView = () => import('@/views/developer/DeveloperDisputeListView.vue')
+const DeveloperProfileView = () => import('@/views/developer/DeveloperProfileView.vue')
+const AdminLoginView = () => import('@/views/admin/AdminLoginView.vue')
+const AdminDashboardView = () => import('@/views/admin/AdminDashboardView.vue')
+const BannerManageView = () => import('@/views/admin/BannerManageView.vue')
+const ResourceManageView = () => import('@/views/admin/ResourceManageView.vue')
+const CommunityManageView = () => import('@/views/admin/CommunityManageView.vue')
+const SkillTagManageView = () => import('@/views/admin/SkillTagManageView.vue')
+const DemandCategoryManageView = () => import('@/views/admin/DemandCategoryManageView.vue')
+const KnowledgeBaseManageView = () => import('@/views/admin/KnowledgeBaseManageView.vue')
+const AdminDemandAuditView = () => import('@/views/admin/AdminDemandAuditView.vue')
+const AdminOrderListView = () => import('@/views/admin/AdminOrderListView.vue')
+const AdminDisputeListView = () => import('@/views/admin/AdminDisputeListView.vue')
+const AdminChatAuditView = () => import('@/views/admin/AdminChatAuditView.vue')
+const AdminUserListView = () => import('@/views/admin/users/AdminUserListView.vue')
 
 const routes = [
   {
@@ -58,11 +64,13 @@ const routes = [
   { path: '/publish', component: PublishEntryView },
   { path: '/resources', component: ResourceShareView },
   { path: '/community', component: CommunityView },
+  { path: '/community/posts/:id', component: CommunityPostDetailView },
   { path: '/roadmap', component: RoadmapView },
   { path: '/articles', component: ArticleListView },
   { path: '/courses', component: CourseListView },
   { path: '/knowledge-base', component: KnowledgeBaseView },
   { path: '/me', component: PersonalCenterView },
+  { path: '/messages', component: ChatCenterView },
   { path: '/admin-entry', component: AdminEntryView },
   {
     path: '/client',
@@ -72,7 +80,9 @@ const routes = [
       { path: 'demands', component: ClientDemandListView },
       { path: 'demands/create', component: ClientDemandCreateView },
       { path: 'orders', component: ClientOrderListView },
-      { path: 'disputes', component: ClientDisputeListView }
+      { path: 'disputes', component: ClientDisputeListView },
+      { path: 'inbox', component: InboxView },
+      { path: 'messages', component: ChatCenterView }
     ]
   },
   {
@@ -84,7 +94,9 @@ const routes = [
       { path: 'market', component: DeveloperMarketView },
       { path: 'quotes', component: DeveloperQuoteListView },
       { path: 'orders', component: DeveloperOrderListView },
-      { path: 'disputes', component: DeveloperDisputeListView }
+      { path: 'disputes', component: DeveloperDisputeListView },
+      { path: 'inbox', component: InboxView },
+      { path: 'messages', component: ChatCenterView }
     ]
   },
   { path: '/admin/login', component: AdminLoginView },
@@ -95,13 +107,15 @@ const routes = [
       { path: 'dashboard', component: AdminDashboardView },
       { path: 'banners', component: BannerManageView },
       { path: 'resources', component: ResourceManageView },
+      { path: 'community', component: CommunityManageView },
       { path: 'skill-tags', component: SkillTagManageView },
       { path: 'categories', component: DemandCategoryManageView },
       { path: 'knowledge-bases', component: KnowledgeBaseManageView },
       { path: 'users', component: AdminUserListView },
       { path: 'demands', component: AdminDemandAuditView },
       { path: 'orders', component: AdminOrderListView },
-      { path: 'disputes', component: AdminDisputeListView }
+      { path: 'disputes', component: AdminDisputeListView },
+      { path: 'chats', component: AdminChatAuditView }
     ]
   }
 ]
@@ -140,7 +154,7 @@ router.beforeEach(async (to) => {
     return '/market'
   }
 
-  if (to.path === '/me' || to.path.startsWith('/client') || to.path.startsWith('/developer')) {
+  if (to.path === '/me' || to.path === '/messages' || to.path.startsWith('/client') || to.path.startsWith('/developer')) {
     if (!authStore.token) {
       emitAuthExpired({
         scope: 'user',

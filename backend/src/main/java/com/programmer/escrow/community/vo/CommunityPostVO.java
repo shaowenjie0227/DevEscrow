@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class CommunityPostVO {
     private Long id;
+    private Long creatorId;
     private String authorName;
     private String forumName;
     private String title;
@@ -17,5 +18,9 @@ public class CommunityPostVO {
     private Integer replyCount;
     private Integer likeCount;
     private Integer favoriteCount;
+    private Integer status;
+    private Boolean liked;
+    private Boolean favorited;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

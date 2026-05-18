@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.community.mapper.CommunityPostActionMapper">
+
+    <resultMap id="CommunityPostActionResultMap" type="com.programmer.escrow.community.entity.CommunityPostActionEntity">
+        <id column="id" property="id"/>
+        <result column="post_id" property="postId"/>
+        <result column="user_id" property="userId"/>
+        <result column="action_type" property="actionType"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, post_id, user_id, action_type, status, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.community.entity.CommunityPostActionEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `community_post_action` (
+            post_id, user_id, action_type, status, created_at, updated_at
+        ) values (
+            #{postId}, #{userId}, #{actionType}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectByPostIdAndUserIdAndType" resultMap="CommunityPostActionResultMap">
+        select <include refid="BaseColumns"/>
+        from `community_post_action`
+        where post_id = #{postId}
+          and user_id = #{userId}
+          and action_type = #{actionType}
+        limit 1
+    </select>
+
+    <select id="selectActiveByUserAndPostIds" resultMap="CommunityPostActionResultMap">
+        select <include refid="BaseColumns"/>
+        from `community_post_action`
+        where user_id = #{userId}
+          and action_type = #{actionType}
+          and status = 1
+          and post_id in
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+    </select>
+
+    <update id="updateStatus">
+        update `community_post_action`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <delete id="deleteByPostId">
+        delete from `community_post_action`
+        where post_id = #{postId}
+    </delete>
+</mapper>

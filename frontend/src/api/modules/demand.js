@@ -36,6 +36,10 @@ export function fetchHomeNotices() {
   return http.get('/api/home-notices')
 }
 
+export function fetchHomeOverview() {
+  return http.get('/api/home/overview')
+}
+
 export function fetchHomeNoticeDetail(noticeId) {
   return http.get(`/api/home-notices/${noticeId}`)
 }

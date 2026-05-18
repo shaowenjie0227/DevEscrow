@@ -18,6 +18,8 @@ public interface DemandMapper {
 
     List<DemandEntity> selectMarketDemands();
 
+    long countMarketDemands();
+
     List<DemandEntity> selectAdminList(@Param("reviewStatus") Integer reviewStatus,
                                        @Param("status") Integer status);
 

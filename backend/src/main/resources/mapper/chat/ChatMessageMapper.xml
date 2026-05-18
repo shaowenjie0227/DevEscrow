@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.chat.mapper.ChatMessageMapper">
+
+    <resultMap id="ChatMessageResultMap" type="com.programmer.escrow.chat.entity.ChatMessageEntity">
+        <id column="id" property="id"/>
+        <result column="biz_type" property="bizType"/>
+        <result column="demand_id" property="demandId"/>
+        <result column="order_id" property="orderId"/>
+        <result column="sender_id" property="senderId"/>
+        <result column="receiver_id" property="receiverId"/>
+        <result column="msg_type" property="msgType"/>
+        <result column="content" property="content"/>
+        <result column="file_url" property="fileUrl"/>
+        <result column="extra_json" property="extraJson"/>
+        <result column="read_status" property="readStatus"/>
+        <result column="status" property="status"/>
+        <result column="read_at" property="readAt"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, biz_type, demand_id, order_id, sender_id, receiver_id, msg_type,
+        content, file_url, extra_json, read_status, status, read_at, created_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.chat.entity.ChatMessageEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `chat_message` (
+            biz_type, demand_id, order_id, sender_id, receiver_id, msg_type,
+            content, file_url, extra_json, read_status, status, read_at, created_at
+        ) values (
+            #{bizType}, #{demandId}, #{orderId}, #{senderId}, #{receiverId}, #{msgType},
+            #{content}, #{fileUrl}, #{extraJson}, #{readStatus}, #{status}, #{readAt}, #{createdAt}
+        )
+    </insert>
+
+    <select id="selectById" resultMap="ChatMessageResultMap">
+        select <include refid="BaseColumns"/>
+        from `chat_message`
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectByUserId" resultMap="ChatMessageResultMap">
+        select <include refid="BaseColumns"/>
+        from `chat_message`
+        where status in (1, 2)
+          and (sender_id = #{userId} or receiver_id = #{userId})
+        order by created_at desc, id desc
+    </select>
+
+    <select id="selectAll" resultMap="ChatMessageResultMap">
+        select <include refid="BaseColumns"/>
+        from `chat_message`
+        where status in (1, 2)
+        order by created_at desc, id desc
+    </select>
+
+    <select id="selectConversationMessages" resultMap="ChatMessageResultMap">
+        select <include refid="BaseColumns"/>
+        from `chat_message`
+        where status in (1, 2)
+          and biz_type = #{bizType}
+          <choose>
+              <when test="demandId != null">
+                  and demand_id = #{demandId}
+              </when>
+              <otherwise>
+                  and demand_id is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="orderId != null">
+                  and order_id = #{orderId}
+              </when>
+              <otherwise>
+                  and order_id is null
+              </otherwise>
+          </choose>
+          and (
+              (sender_id = #{leftUserId} and receiver_id = #{rightUserId})
+              or
+              (sender_id = #{rightUserId} and receiver_id = #{leftUserId})
+          )
+        order by created_at asc, id asc
+    </select>
+
+    <update id="markConversationRead">
+        update `chat_message`
+        set read_status = 1,
+            read_at = #{readAt}
+        where status in (1, 2)
+          and biz_type = #{bizType}
+          <choose>
+              <when test="demandId != null">
+                  and demand_id = #{demandId}
+              </when>
+              <otherwise>
+                  and demand_id is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="orderId != null">
+                  and order_id = #{orderId}
+              </when>
+              <otherwise>
+                  and order_id is null
+              </otherwise>
+          </choose>
+          and receiver_id = #{receiverId}
+          and sender_id = #{senderId}
+          and read_status = 0
+    </update>
+
+    <update id="updateRecalled">
+        update `chat_message`
+        set status = 2,
+            read_status = 1,
+            read_at = #{readAt}
+        where id = #{id}
+          and sender_id = #{senderId}
+          and status = 1
+    </update>
+</mapper>

@@ -9,7 +9,9 @@ public class CommunityReplyEntity {
     private Long id;
     private Long postId;
     private Long creatorId;
+    private Long parentReplyId;
     private String authorName;
+    private String replyToAuthorName;
     private String content;
     private Integer likeCount;
     private Integer status;

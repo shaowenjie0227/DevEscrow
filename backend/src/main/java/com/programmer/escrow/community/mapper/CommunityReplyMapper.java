@@ -9,5 +9,16 @@ import java.util.List;
 @Mapper
 public interface CommunityReplyMapper {
     int insert(CommunityReplyEntity entity);
-    List<CommunityReplyEntity> selectByPostId(@Param("postId") Long postId);
+
+    CommunityReplyEntity selectById(@Param("id") Long id);
+
+    List<CommunityReplyEntity> selectList(@Param("postId") Long postId, @Param("status") Integer status);
+
+    int countActiveByPostId(@Param("postId") Long postId);
+
+    int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+
+    int deleteById(@Param("id") Long id);
+
+    int deleteByPostId(@Param("postId") Long postId);
 }

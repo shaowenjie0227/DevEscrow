@@ -5,6 +5,9 @@ import com.programmer.escrow.auth.context.UserContextHolder;
 import com.programmer.escrow.auth.util.AuthRoleResolver;
 import com.programmer.escrow.security.model.IssuedJwtToken;
 import com.programmer.escrow.security.model.JwtUserClaims;
+import com.programmer.escrow.user.entity.UserEntity;
+import com.programmer.escrow.user.mapper.UserMapper;
+import com.programmer.escrow.user.service.UserBanLifecycleService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -26,13 +29,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final JwtSessionService jwtSessionService;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final UserMapper userMapper;
+    private final UserBanLifecycleService userBanLifecycleService;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil,
                                    JwtSessionService jwtSessionService,
-                                   RestAuthenticationEntryPoint authenticationEntryPoint) {
+                                   RestAuthenticationEntryPoint authenticationEntryPoint,
+                                   UserMapper userMapper,
+                                   UserBanLifecycleService userBanLifecycleService) {
         this.jwtUtil = jwtUtil;
         this.jwtSessionService = jwtSessionService;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.userMapper = userMapper;
+        this.userBanLifecycleService = userBanLifecycleService;
     }
 
     @Override
@@ -58,6 +67,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             JwtUserClaims claims = jwtUtil.parseToken(token);
+            UserEntity user = userBanLifecycleService.normalizeBanStatus(userMapper.selectById(claims.userId()));
+            if (user == null || user.getStatus() == null || user.getStatus() != 1) {
+                authenticationEntryPoint.writeUnauthorized(response, "account has been disabled");
+                return;
+            }
+
             UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(
                             claims.userId(),

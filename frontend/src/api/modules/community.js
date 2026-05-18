@@ -4,6 +4,10 @@ export function fetchCommunityPosts(params) {
   return http.get('/api/community/posts', { params })
 }
 
+export function fetchCommunityPostDetail(postId) {
+  return http.get(`/api/community/posts/${postId}`)
+}
+
 export function createCommunityPost(data) {
   return http.post('/api/community/posts', data)
 }

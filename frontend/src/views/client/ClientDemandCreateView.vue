@@ -69,7 +69,7 @@
         <div class="section-head">
           <div>
             <strong>需求图片</strong>
-            <p>支持多张图片，第一张会作为封面。</p>
+            <p>最多上传 8 张图片，第一张会作为封面。</p>
           </div>
           <div class="toolbar-actions">
             <input ref="imageInputRef" class="hidden-input" type="file" accept="image/*" multiple @change="handleImageSelect" />
@@ -171,7 +171,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createDemand, fetchDemandCategories } from '@/api/modules/demand'
 
-const MAX_IMAGE_COUNT = 6
+const MAX_IMAGE_COUNT = 8
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 const MAX_ATTACHMENT_COUNT = 5
 const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024

@@ -8,6 +8,14 @@ export function fetchAdminUsers(params) {
   return http.get('/api/admin/users', { params })
 }
 
+export function updateAdminUserStatus(userId, data) {
+  return http.post(`/api/admin/users/${userId}/ban`, data)
+}
+
+export function sendAdminUserMessage(userId, data) {
+  return http.post(`/api/admin/users/${userId}/messages`, data)
+}
+
 export function auditAdminDeveloper(userId, data) {
   return http.post(`/api/admin/users/${userId}/developer-audit`, data)
 }
@@ -158,6 +166,30 @@ export function toggleAdminResourceStatus(id, data) {
 
 export function deleteAdminResource(id) {
   return http.delete(`/api/admin/resources/${id}`)
+}
+
+export function fetchAdminCommunityPosts(params) {
+  return http.get('/api/admin/community/posts', { params })
+}
+
+export function fetchAdminCommunityReplies(postId, params) {
+  return http.get(`/api/admin/community/posts/${postId}/replies`, { params })
+}
+
+export function updateAdminCommunityPostStatus(postId, data) {
+  return http.post(`/api/admin/community/posts/${postId}/status`, data)
+}
+
+export function deleteAdminCommunityPost(postId) {
+  return http.delete(`/api/admin/community/posts/${postId}`)
+}
+
+export function updateAdminCommunityReplyStatus(replyId, data) {
+  return http.post(`/api/admin/community/replies/${replyId}/status`, data)
+}
+
+export function deleteAdminCommunityReply(replyId) {
+  return http.delete(`/api/admin/community/replies/${replyId}`)
 }
 
 export function uploadAdminImage(file) {

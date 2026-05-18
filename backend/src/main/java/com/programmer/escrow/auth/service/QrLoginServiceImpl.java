@@ -18,6 +18,7 @@ import com.programmer.escrow.security.JwtUtil;
 import com.programmer.escrow.security.model.IssuedJwtToken;
 import com.programmer.escrow.user.entity.UserEntity;
 import com.programmer.escrow.user.mapper.UserMapper;
+import com.programmer.escrow.user.service.UserBanLifecycleService;
 import com.programmer.escrow.wechat.model.WechatOAuthUser;
 import com.programmer.escrow.wechat.service.WechatOfficialAccountService;
 import com.programmer.escrow.websocket.LoginWebSocketSessionManager;
@@ -52,6 +53,7 @@ public class QrLoginServiceImpl implements QrLoginService {
     private final JwtSessionService jwtSessionService;
     private final LoginLogMapper loginLogMapper;
     private final LoginWebSocketSessionManager loginWebSocketSessionManager;
+    private final UserBanLifecycleService userBanLifecycleService;
 
     public QrLoginServiceImpl(StringRedisTemplate stringRedisTemplate,
                               ObjectMapper objectMapper,
@@ -63,7 +65,8 @@ public class QrLoginServiceImpl implements QrLoginService {
                               JwtUtil jwtUtil,
                               JwtSessionService jwtSessionService,
                               LoginLogMapper loginLogMapper,
-                              LoginWebSocketSessionManager loginWebSocketSessionManager) {
+                              LoginWebSocketSessionManager loginWebSocketSessionManager,
+                              UserBanLifecycleService userBanLifecycleService) {
         this.stringRedisTemplate = stringRedisTemplate;
         this.objectMapper = objectMapper;
         this.wechatOfficialAccountService = wechatOfficialAccountService;
@@ -75,6 +78,7 @@ public class QrLoginServiceImpl implements QrLoginService {
         this.jwtSessionService = jwtSessionService;
         this.loginLogMapper = loginLogMapper;
         this.loginWebSocketSessionManager = loginWebSocketSessionManager;
+        this.userBanLifecycleService = userBanLifecycleService;
     }
 
     @Override
@@ -153,6 +157,7 @@ public class QrLoginServiceImpl implements QrLoginService {
             }
 
             UserEntity userEntity = loadOrCreateWechatUser(wechatOAuthUser);
+            userEntity = userBanLifecycleService.normalizeBanStatus(userEntity);
             if (userEntity.getStatus() == null || userEntity.getStatus() != 1) {
                 throw new BizException(403, "user has been disabled");
             }

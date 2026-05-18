@@ -1,6 +1,8 @@
 package com.programmer.escrow.auth.controller;
 
 import com.programmer.escrow.auth.context.UserContextHolder;
+import com.programmer.escrow.auth.dto.EmailCodeLoginDTO;
+import com.programmer.escrow.auth.dto.EmailCodeSendDTO;
 import com.programmer.escrow.auth.dto.LoginDTO;
 import com.programmer.escrow.auth.dto.RegisterDTO;
 import com.programmer.escrow.auth.service.AuthService;
@@ -32,6 +34,17 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginVO> login(@Valid @RequestBody LoginDTO dto) {
         return ApiResponse.success(authService.login(dto));
+    }
+
+    @PostMapping("/email-code/send")
+    public ApiResponse<Void> sendEmailCode(@Valid @RequestBody EmailCodeSendDTO dto) {
+        authService.sendEmailLoginCode(dto);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/email-code/login")
+    public ApiResponse<LoginVO> loginByEmailCode(@Valid @RequestBody EmailCodeLoginDTO dto) {
+        return ApiResponse.success(authService.loginByEmailCode(dto));
     }
 
     @PostMapping("/logout")

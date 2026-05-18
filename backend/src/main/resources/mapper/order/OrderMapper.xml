@@ -101,6 +101,21 @@
         order by id desc
     </select>
 
+    <select id="countByStatus" resultType="long">
+        select count(1)
+        from `orders`
+        where status = #{status}
+    </select>
+
+    <select id="countByStatuses" resultType="long">
+        select count(1)
+        from `orders`
+        where status in
+        <foreach collection="statuses" item="status" open="(" separator="," close=")">
+            #{status}
+        </foreach>
+    </select>
+
     <update id="updateToPaid">
         update `orders`
         set pay_status = 1,

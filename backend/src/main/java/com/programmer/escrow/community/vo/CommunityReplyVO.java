@@ -10,8 +10,13 @@ import java.time.LocalDateTime;
 public class CommunityReplyVO {
     private Long id;
     private Long postId;
+    private Long creatorId;
+    private Long parentReplyId;
     private String authorName;
+    private String replyToAuthorName;
     private String content;
     private Integer likeCount;
+    private Integer status;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

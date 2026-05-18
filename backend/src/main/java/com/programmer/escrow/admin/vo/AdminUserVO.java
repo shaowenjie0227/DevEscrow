@@ -3,6 +3,8 @@ package com.programmer.escrow.admin.vo;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 public class AdminUserVO {
@@ -26,4 +28,6 @@ public class AdminUserVO {
     private String developerSkillTagIds;
     private String skillAuditReason;
     private Integer status;
+    private String banReason;
+    private LocalDateTime banExpiresAt;
 }

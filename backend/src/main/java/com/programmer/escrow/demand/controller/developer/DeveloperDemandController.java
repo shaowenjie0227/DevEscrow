@@ -27,6 +27,6 @@ public class DeveloperDemandController {
 
     @GetMapping("/{demandId}")
     public ApiResponse<DemandDetailVO> getDemandDetail(@PathVariable Long demandId) {
-        return ApiResponse.success(demandService.getDemandDetail(demandId));
+        return ApiResponse.success(demandService.getMarketDemandDetail(demandId));
     }
 }

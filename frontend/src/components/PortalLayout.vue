@@ -23,7 +23,7 @@
         </div>
 
         <div class="brand-panel__body">
-          <div class="brand-mark">{{ badge }}</div>
+          
           <div class="brand-copy">
             <h1>{{ title }}</h1>
             <p>{{ subtitle }}</p>
@@ -48,21 +48,57 @@
           <span class="nav-copy">
             <strong>{{ item.label }}</strong>
           </span>
+          <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
         </router-link>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="identity-card">
-          <span class="identity-avatar">{{ accountInitial }}</span>
-          <div>
+        <button
+          v-if="profileTo"
+          type="button"
+          class="identity-card identity-card--action"
+          @click="goProfile"
+        >
+          <span class="identity-avatar">
+            <img
+              v-if="showAccountAvatar"
+              :src="accountAvatar"
+              :alt="`${accountName || title}头像`"
+              @error="handleAvatarError"
+            />
+            <template v-else>{{ accountInitial }}</template>
+          </span>
+          <div class="identity-card__copy">
             <strong>{{ accountName || '当前账号' }}</strong>
-            <small>{{ accountMeta }}</small>
+            <small>{{ identityMeta }}</small>
+          </div>
+        </button>
+
+        <div v-else class="identity-card">
+          <span class="identity-avatar">
+            <img
+              v-if="showAccountAvatar"
+              :src="accountAvatar"
+              :alt="`${accountName || title}头像`"
+              @error="handleAvatarError"
+            />
+            <template v-else>{{ accountInitial }}</template>
+          </span>
+          <div class="identity-card__copy">
+            <strong>{{ accountName || '当前账号' }}</strong>
+            <small>{{ identityMeta }}</small>
           </div>
         </div>
 
         <div class="identity-actions">
           <span class="identity-chip">{{ currentSection?.label || title }}</span>
-          <button type="button" class="logout-link" @click="emit('logout')">退出登录</button>
+          <div class="identity-actions__buttons">
+            <button v-if="homeTo" type="button" class="sidebar-home-link" @click="goHome">
+              <el-icon><ArrowLeft /></el-icon>
+              {{ homeLabel || '返回首页' }}
+            </button>
+            <button type="button" class="logout-link" @click="emit('logout')">退出登录</button>
+          </div>
         </div>
       </div>
     </aside>
@@ -82,11 +118,18 @@
           <h2>{{ currentSection?.label || title }}</h2>
         </div>
 
-        <div class="topbar-profile">
-          <span class="presence-dot" />
-          <div>
-            <strong>{{ accountName || title }}</strong>
-            <p>{{ accountMeta }}</p>
+        <div class="topbar-actions">
+          <button v-if="homeTo" type="button" class="home-link" @click="goHome">
+            <el-icon><ArrowLeft /></el-icon>
+            {{ homeLabel || '返回首页' }}
+          </button>
+
+          <div class="topbar-profile">
+            <span class="presence-dot" />
+            <div>
+              <strong>{{ accountName || title }}</strong>
+              <p>{{ accountMeta }}</p>
+            </div>
           </div>
         </div>
       </header>
@@ -101,8 +144,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { ArrowLeft } from '@element-plus/icons-vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const props = defineProps({
   theme: {
@@ -136,12 +180,30 @@ const props = defineProps({
   accountMeta: {
     type: String,
     default: ''
+  },
+  accountAvatar: {
+    type: String,
+    default: ''
+  },
+  profileTo: {
+    type: String,
+    default: ''
+  },
+  homeTo: {
+    type: String,
+    default: ''
+  },
+  homeLabel: {
+    type: String,
+    default: '返回首页'
   }
 })
 
 const emit = defineEmits(['logout'])
 const route = useRoute()
+const router = useRouter()
 const mobileMenuVisible = ref(false)
+const avatarLoadFailed = ref(false)
 
 const currentSection = computed(() => {
   const sorted = [...props.navItems].sort((left, right) => right.to.length - left.to.length)
@@ -152,6 +214,15 @@ const accountInitial = computed(() => {
   const source = (props.accountName || props.title || 'P').trim()
   return source.slice(0, 1).toUpperCase()
 })
+
+const identityMeta = computed(() => {
+  if (props.profileTo) {
+    return '个人中心'
+  }
+  return props.accountMeta || '当前账号'
+})
+
+const showAccountAvatar = computed(() => Boolean(props.accountAvatar) && !avatarLoadFailed.value)
 
 const paddedNavCount = computed(() => String(props.navItems.length).padStart(2, '0'))
 
@@ -168,6 +239,30 @@ function openMobileMenu() {
 function closeMobileMenu() {
   mobileMenuVisible.value = false
 }
+
+function handleAvatarError() {
+  avatarLoadFailed.value = true
+}
+
+function goProfile() {
+  if (!props.profileTo) {
+    return
+  }
+  closeMobileMenu()
+  router.push(props.profileTo)
+}
+
+function goHome() {
+  closeMobileMenu()
+  router.push(props.homeTo || '/')
+}
+
+watch(
+  () => props.accountAvatar,
+  () => {
+    avatarLoadFailed.value = false
+  }
+)
 </script>
 
 <style scoped>
@@ -176,7 +271,7 @@ function closeMobileMenu() {
   isolation: isolate;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 160px minmax(0, 1fr);
   gap: 24px;
   padding: 24px;
 }
@@ -281,6 +376,7 @@ function closeMobileMenu() {
 
 .sidebar-close,
 .nav-toggle,
+.sidebar-home-link,
 .logout-link {
   border: 0;
   font: inherit;
@@ -310,8 +406,7 @@ function closeMobileMenu() {
 }
 
 .brand-panel__meta,
-.workspace-nav-head,
-.identity-actions {
+.workspace-nav-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -512,6 +607,21 @@ function closeMobileMenu() {
   font-weight: 700;
 }
 
+.nav-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-primary) 26%, rgba(255, 255, 255, 0.08));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .nav-copy small,
 .identity-card small {
   color: rgba(226, 232, 240, 0.68);
@@ -530,10 +640,54 @@ function closeMobileMenu() {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 14px 14px 14px 12px;
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+}
+
+.identity-card__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.identity-card__copy strong,
+.identity-card__copy small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-card--action {
+  appearance: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.identity-card--action:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--theme-primary) 22%, rgba(148, 163, 184, 0.18));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--theme-primary) 10%, rgba(255, 255, 255, 0.05)),
+    rgba(255, 255, 255, 0.03)
+  );
+  box-shadow: 0 10px 22px rgba(8, 15, 31, 0.16);
+}
+
+.identity-card--action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--theme-primary) 72%, white);
+  outline-offset: 2px;
 }
 
 .identity-avatar {
@@ -542,6 +696,7 @@ function closeMobileMenu() {
   justify-content: center;
   min-width: 42px;
   height: 42px;
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--theme-primary) 24%, rgba(148, 163, 184, 0.12));
   border-radius: 12px;
   background: color-mix(in srgb, var(--theme-primary) 16%, rgba(255, 255, 255, 0.06));
@@ -549,6 +704,13 @@ function closeMobileMenu() {
   font-family: var(--font-display);
   font-weight: 700;
   box-shadow: none;
+  flex-shrink: 0;
+}
+
+.identity-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .identity-card strong,
@@ -557,7 +719,22 @@ function closeMobileMenu() {
   font-size: 15px;
 }
 
+.identity-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.identity-actions__buttons {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar-home-link,
 .logout-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 44px;
   padding: 0 18px;
   border: 1px solid rgba(148, 163, 184, 0.14);
@@ -571,6 +748,16 @@ function closeMobileMenu() {
     color 180ms ease;
 }
 
+.sidebar-home-link {
+  color: color-mix(in srgb, var(--theme-primary) 68%, white);
+  background: color-mix(in srgb, var(--theme-primary) 10%, rgba(255, 255, 255, 0.04));
+}
+
+.sidebar-home-link .el-icon {
+  font-size: 14px;
+}
+
+.sidebar-home-link:hover,
 .logout-link:hover {
   background: rgba(255, 255, 255, 0.055);
   border-color: rgba(148, 163, 184, 0.22);
@@ -605,6 +792,14 @@ function closeMobileMenu() {
   gap: 10px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
 .topbar-meta {
   display: flex;
   align-items: center;
@@ -629,6 +824,35 @@ function closeMobileMenu() {
   background: color-mix(in srgb, var(--theme-primary) 10%, white);
   color: var(--theme-primary);
   font-weight: 700;
+}
+
+.home-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-main);
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.home-link:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--theme-primary) 28%, rgba(148, 163, 184, 0.28));
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.home-link .el-icon {
+  font-size: 14px;
 }
 
 .topbar-profile {
@@ -668,7 +892,7 @@ function closeMobileMenu() {
   gap: 14px;
   border-color: color-mix(in srgb, var(--theme-primary) 16%, rgba(71, 85, 105, 0.4));
   border-radius: 18px;
-  padding: 20px 16px 18px;
+  padding: 18px 12px 16px;
   background: linear-gradient(180deg, #18202d 0%, #161d29 100%);
   box-shadow: none;
 }
@@ -847,7 +1071,7 @@ function closeMobileMenu() {
 
 .workspace-shell.theme-client .identity-actions,
 .workspace-shell.theme-developer .identity-actions {
-  justify-content: flex-end;
+  align-items: stretch;
 }
 
 .workspace-shell.theme-client .identity-chip,
@@ -855,7 +1079,9 @@ function closeMobileMenu() {
   display: none;
 }
 
+.workspace-shell.theme-client .sidebar-home-link,
 .workspace-shell.theme-client .logout-link,
+.workspace-shell.theme-developer .sidebar-home-link,
 .workspace-shell.theme-developer .logout-link {
   min-height: 38px;
   padding: 0 14px;
@@ -865,7 +1091,15 @@ function closeMobileMenu() {
   color: rgba(226, 232, 240, 0.88);
 }
 
+.workspace-shell.theme-client .sidebar-home-link,
+.workspace-shell.theme-developer .sidebar-home-link {
+  background: color-mix(in srgb, var(--theme-primary) 10%, rgba(255, 255, 255, 0.03));
+  color: color-mix(in srgb, var(--theme-primary) 74%, white);
+}
+
+.workspace-shell.theme-client .sidebar-home-link:hover,
 .workspace-shell.theme-client .logout-link:hover,
+.workspace-shell.theme-developer .sidebar-home-link:hover,
 .workspace-shell.theme-developer .logout-link:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(100, 116, 139, 0.48);
@@ -879,7 +1113,7 @@ function closeMobileMenu() {
   gap: 14px;
   border-color: rgba(71, 85, 105, 0.4);
   border-radius: 18px;
-  padding: 20px 16px 18px;
+  padding: 18px 12px 16px;
   background: linear-gradient(180deg, #18202d 0%, #161d29 100%);
   box-shadow: none;
 }
@@ -1032,13 +1266,14 @@ function closeMobileMenu() {
 }
 
 .workspace-shell.theme-admin .identity-actions {
-  justify-content: flex-end;
+  align-items: stretch;
 }
 
 .workspace-shell.theme-admin .identity-chip {
   display: none;
 }
 
+.workspace-shell.theme-admin .sidebar-home-link,
 .workspace-shell.theme-admin .logout-link {
   min-height: 38px;
   padding: 0 14px;
@@ -1048,6 +1283,12 @@ function closeMobileMenu() {
   color: rgba(226, 232, 240, 0.88);
 }
 
+.workspace-shell.theme-admin .sidebar-home-link {
+  background: rgba(215, 141, 25, 0.12);
+  color: #f7c86c;
+}
+
+.workspace-shell.theme-admin .sidebar-home-link:hover,
 .workspace-shell.theme-admin .logout-link:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(100, 116, 139, 0.48);
@@ -1104,6 +1345,16 @@ function closeMobileMenu() {
     flex-direction: column;
     align-items: flex-start;
     padding: 20px;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .home-link {
+    width: 100%;
   }
 
   .topbar-profile {

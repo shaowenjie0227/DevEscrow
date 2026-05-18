@@ -13,5 +13,7 @@ public interface DemandService {
 
     List<DemandDetailVO> listMarketDemands();
 
-    DemandDetailVO getDemandDetail(Long demandId);
+    DemandDetailVO getMyDemandDetail(Long publisherId, Long demandId);
+
+    DemandDetailVO getMarketDemandDetail(Long demandId);
 }

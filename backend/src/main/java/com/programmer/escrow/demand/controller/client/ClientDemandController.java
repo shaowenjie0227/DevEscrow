@@ -41,7 +41,7 @@ public class ClientDemandController {
 
     @GetMapping("/{demandId}")
     public ApiResponse<DemandDetailVO> getDemandDetail(@PathVariable Long demandId) {
-        return ApiResponse.success(demandService.getDemandDetail(demandId));
+        return ApiResponse.success(demandService.getMyDemandDetail(UserContextHolder.getRequiredUserId(), demandId));
     }
 
     @GetMapping("/{demandId}/quotes")

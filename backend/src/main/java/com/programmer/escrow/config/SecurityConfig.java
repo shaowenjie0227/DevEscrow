@@ -41,10 +41,16 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/admin/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/qr/create").permitAll()
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/qr/create",
+                                "/api/auth/email-code/send",
+                                "/api/auth/email-code/login"
+                        ).permitAll()
                         .requestMatchers("/wx/**", "/ws/**", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/community/**").permitAll()
-                        .requestMatchers("/api/auth/me", "/api/auth/logout", "/api/community/**", "/api/developer/profile/**", "/api/uploads/**").authenticated()
+                        .requestMatchers("/api/auth/me", "/api/auth/logout", "/api/community/**", "/api/developer/profile/**", "/api/uploads/**", "/api/chat/**", "/api/inbox/**").authenticated()
                         .requestMatchers("/api/client/**").hasAuthority("ROLE_CLIENT")
                         .requestMatchers("/api/developer/**").authenticated()
                         .anyRequest().permitAll()

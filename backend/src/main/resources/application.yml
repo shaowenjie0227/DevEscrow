@@ -1,20 +1,20 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: programmer-escrow-backend
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/programmer_escrow?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/programmer_escrow?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      database: 0
-      timeout: 3000ms
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:3000ms}
   security:
     user:
       name: disabled
@@ -24,10 +24,10 @@ spring:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
   mail:
-    host: smtp.qq.com
-    port: 465
-    username: 1074482770@qq.com
-    password: mcjsoqesxfstiiac
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:1074482770@qq.com}
+    password: ${MAIL_PASSWORD:mcjsoqesxfstiiac}
     default-encoding: UTF-8
     properties:
       mail:
@@ -47,36 +47,55 @@ mybatis:
 
 app:
   auth:
-    token-expire-seconds: 7200
+    token-expire-seconds: ${APP_AUTH_TOKEN_EXPIRE_SECONDS:7200}
   cors:
     allowed-origins:
-      - http://localhost:5173
+      - ${FRONTEND_ORIGIN:http://localhost:5173}
   jwt:
-    issuer: programmer-escrow
-    secret: change-this-jwt-secret-to-a-very-long-random-string-2026
-    access-token-ttl-seconds: 7200
-    refresh-threshold-seconds: 1800
+    issuer: ${APP_JWT_ISSUER:programmer-escrow}
+    secret: ${APP_JWT_SECRET:change-this-jwt-secret-to-a-very-long-random-string-2026}
+    access-token-ttl-seconds: ${APP_JWT_ACCESS_TOKEN_TTL_SECONDS:7200}
+    refresh-threshold-seconds: ${APP_JWT_REFRESH_THRESHOLD_SECONDS:1800}
   wechat:
-    mock-enabled: true
-    app-id: wx-demo-app-id
-    app-secret: wx-demo-app-secret
-    oauth-scope: snsapi_userinfo
-    callback-url: http://localhost:8080/wx/callback
-    qr-entry-url: http://localhost:8080/wx/login
-    login-entry-url: http://localhost:8080/wx/login-entry
-    subscribe-url: http://localhost:8080/wx/mock/follow
-    official-account-qr-image-url: https://dummyimage.com/320x320/16a34a/ffffff&text=Official+Account+QR
-    server-base-url: http://localhost:8080
-    official-access-token-key: WECHAT:ACCESS_TOKEN
+    mock-enabled: ${WECHAT_MOCK_ENABLED:true}
+    app-id: ${WECHAT_APP_ID:wx-demo-app-id}
+    app-secret: ${WECHAT_APP_SECRET:wx-demo-app-secret}
+    oauth-scope: ${WECHAT_OAUTH_SCOPE:snsapi_userinfo}
+    callback-url: ${WECHAT_CALLBACK_URL:http://localhost:8080/wx/callback}
+    qr-entry-url: ${WECHAT_QR_ENTRY_URL:http://localhost:8080/wx/login}
+    login-entry-url: ${WECHAT_LOGIN_ENTRY_URL:http://localhost:8080/wx/login-entry}
+    subscribe-url: ${WECHAT_SUBSCRIBE_URL:http://localhost:8080/wx/mock/follow}
+    official-account-qr-image-url: ${WECHAT_OFFICIAL_QR_IMAGE_URL:https://dummyimage.com/320x320/16a34a/ffffff&text=Official+Account+QR}
+    server-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
+    official-access-token-key: ${WECHAT_OFFICIAL_ACCESS_TOKEN_KEY:WECHAT:ACCESS_TOKEN}
     mock:
-      openid: mock-openid-10001
-      nickname: Mock WeChat User
-      avatar-url: https://dummyimage.com/200x200/2563eb/ffffff&text=WX
-      subscribed: true
+      openid: ${WECHAT_MOCK_OPENID:mock-openid-10001}
+      nickname: ${WECHAT_MOCK_NICKNAME:Mock WeChat User}
+      avatar-url: ${WECHAT_MOCK_AVATAR_URL:https://dummyimage.com/200x200/2563eb/ffffff&text=WX}
+      subscribed: ${WECHAT_MOCK_SUBSCRIBED:true}
+  home:
+    admin-contact:
+      title: ${APP_HOME_ADMIN_CONTACT_TITLE:联系平台管理员}
+      message: ${APP_HOME_ADMIN_CONTACT_MESSAGE:如需入驻答疑、活动合作、问题反馈或人工协助，可通过下方二维码联系平台管理员。}
+      qr-image-url: ${APP_HOME_ADMIN_CONTACT_QR_IMAGE_URL:/qr-code.jpg}
+    market-signals:
+      - label: 高需求方向
+        value: 企业后台 / 小程序 / AI 工具
+        note: 近阶段更容易进入有效沟通的需求，优先来自已审核通过的真实发布内容。
+      - label: 更易成交
+        value: Demo / MVP / 二期接手
+        note: 范围边界清晰、里程碑明确的需求，通常更容易快速进入报价与排期。
+      - label: 沟通重点
+        value: 交付范围 / 节点 / 预算
+        note: 上线文案建议优先强调范围清晰和交付节奏，减少无效往返。
+    trading-rules:
+      - 先明确交付范围和里程碑，再进入报价，可以显著减少来回确认成本。
+      - 优先验证关键流程是否跑通，再逐步补齐非核心页面和扩展能力。
+      - 把预算、周期、协作方式说清楚，通常更容易在当天进入有效沟通。
   upload:
-    base-dir: uploads
+    base-dir: ${APP_UPLOAD_BASE_DIR:uploads}
   sequence:
-    demand-prefix: DM
-    quote-prefix: QT
-    order-prefix: OD
-    dispute-prefix: DP
+    demand-prefix: ${APP_SEQUENCE_DEMAND_PREFIX:DM}
+    quote-prefix: ${APP_SEQUENCE_QUOTE_PREFIX:QT}
+    order-prefix: ${APP_SEQUENCE_ORDER_PREFIX:OD}
+    dispute-prefix: ${APP_SEQUENCE_DISPUTE_PREFIX:DP}

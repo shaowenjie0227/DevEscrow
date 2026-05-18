@@ -3,11 +3,13 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElDialog, ElInput, ElMessage } from 'element-plus'
 import { Cellphone, Close, Lock, Message, User } from '@element-plus/icons-vue'
-import { createQrLogin, login, register } from '@/api/modules/auth'
+import { createQrLogin, login, loginByEmailCode, register, sendEmailLoginCode } from '@/api/modules/auth'
 import { useLoginWebSocket } from '@/composables/useLoginWebSocket'
 import { useAuthStore } from '@/stores/auth'
 
-type AuthPanel = 'password' | 'sms' | 'register'
+type AuthPanel = 'password' | 'sms' | 'email' | 'register'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const props = withDefaults(
   defineProps<{
@@ -42,6 +44,8 @@ const activePanel = ref<AuthPanel>('password')
 const submitting = ref(false)
 const qrLoading = ref(false)
 const smsCountdown = ref(0)
+const emailCountdown = ref(0)
+const emailSending = ref(false)
 
 const loginForm = reactive({
   account: '',
@@ -50,6 +54,11 @@ const loginForm = reactive({
 
 const smsForm = reactive({
   phone: '',
+  code: ''
+})
+
+const emailForm = reactive({
+  email: '',
   code: ''
 })
 
@@ -70,6 +79,7 @@ const expireAt = ref(0)
 let refreshTimer: number | null = null
 let countdownTimer: number | null = null
 let smsTimer: number | null = null
+let emailTimer: number | null = null
 
 const loginCodeDisplay = computed(() => loginCode.value || '------')
 const loginEntryLink = computed(() => {
@@ -80,10 +90,12 @@ const loginEntryLink = computed(() => {
 })
 const showDismissAction = computed(() => !props.forceLogin && Boolean(props.message?.trim()))
 const isSmsPanel = computed(() => activePanel.value === 'sms')
+const isEmailPanel = computed(() => activePanel.value === 'email')
 const isRegisterPanel = computed(() => activePanel.value === 'register')
 const panelTitle = computed(() => {
   if (activePanel.value === 'register') return '注册新账号'
   if (activePanel.value === 'sms') return '短信验证码登录'
+  if (activePanel.value === 'email') return '邮箱登录'
   return '密码登录'
 })
 const socketText = computed(() => {
@@ -126,6 +138,7 @@ watch(
 onBeforeUnmount(() => {
   stopQrSession()
   clearSmsTimer()
+  clearEmailTimer()
 })
 
 function clearTimers() {
@@ -145,6 +158,14 @@ function clearSmsTimer() {
     smsTimer = null
   }
   smsCountdown.value = 0
+}
+
+function clearEmailTimer() {
+  if (emailTimer) {
+    window.clearInterval(emailTimer)
+    emailTimer = null
+  }
+  emailCountdown.value = 0
 }
 
 function stopQrSession(nextNotice = DEFAULT_QR_NOTICE) {
@@ -170,6 +191,8 @@ function clearForms() {
   loginForm.password = ''
   smsForm.phone = ''
   smsForm.code = ''
+  emailForm.email = ''
+  emailForm.code = ''
   registerForm.phone = ''
   registerForm.email = ''
   registerForm.nickname = ''
@@ -288,25 +311,74 @@ function handleSocketMessage(event: MessageEvent) {
     visible.value = false
     stopQrSession()
     clearForms()
+    clearSmsTimer()
+    clearEmailTimer()
     emit('success')
     ElMessage.success('扫码登录成功')
     finishAfterLogin(props.successRedirect?.trim() || resolveRedirectPath(payload))
   }
 }
 
-async function handlePasswordLogin() {
+async function performLogin(payload: { account: string; password: string }, successMessage = '登录成功') {
   submitting.value = true
   try {
-    const response = await login(loginForm)
-    const payload = response?.data ?? response
-    authStore.setLogin(payload)
-    visible.value = false
-    clearForms()
-    emit('success')
-    ElMessage.success('登录成功')
-    finishAfterLogin(props.successRedirect?.trim() || resolveRedirectPath(payload))
+    const response = await login(payload)
+    finishLogin(response?.data ?? response, successMessage)
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '登录失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+function finishLogin(payload: any, successMessage: string) {
+  authStore.setLogin(payload)
+  visible.value = false
+  clearForms()
+  clearSmsTimer()
+  clearEmailTimer()
+  emit('success')
+  ElMessage.success(successMessage)
+  finishAfterLogin(props.successRedirect?.trim() || resolveRedirectPath(payload))
+}
+
+async function handlePasswordLogin() {
+  await performLogin(
+    {
+      account: loginForm.account.trim(),
+      password: loginForm.password
+    },
+    '登录成功'
+  )
+}
+
+async function handleEmailLogin() {
+  const email = emailForm.email.trim()
+  if (!email) {
+    ElMessage.warning('请输入邮箱')
+    return
+  }
+
+  if (!EMAIL_PATTERN.test(email)) {
+    ElMessage.warning('请输入正确的邮箱格式')
+    return
+  }
+
+  const code = emailForm.code.trim()
+  if (!code) {
+    ElMessage.warning('请输入验证码')
+    return
+  }
+
+  submitting.value = true
+  try {
+    const response = await loginByEmailCode({
+      email,
+      code
+    })
+    finishLogin(response?.data ?? response, '邮箱登录成功')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '邮箱登录失败')
   } finally {
     submitting.value = false
   }
@@ -316,13 +388,7 @@ async function handleRegister() {
   submitting.value = true
   try {
     const response = await register(registerForm)
-    const payload = response?.data ?? response
-    authStore.setLogin(payload)
-    visible.value = false
-    clearForms()
-    emit('success')
-    ElMessage.success('注册成功')
-    finishAfterLogin(props.successRedirect?.trim() || resolveRedirectPath(payload))
+    finishLogin(response?.data ?? response, '注册成功')
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '注册失败')
   } finally {
@@ -331,7 +397,7 @@ async function handleRegister() {
 }
 
 function handleSmsLogin() {
-  ElMessage.warning('短信登录接口暂未接入，当前请先使用密码登录或扫码登录。')
+  ElMessage.warning('短信登录接口暂未接入，当前请先使用密码登录、邮箱登录或扫码登录。')
 }
 
 function handleSendSms() {
@@ -353,6 +419,41 @@ function handleSendSms() {
       clearSmsTimer()
     }
   }, 1000)
+}
+
+async function handleSendEmailCode() {
+  const email = emailForm.email.trim()
+  if (!email) {
+    ElMessage.warning('请先输入邮箱')
+    return
+  }
+
+  if (!EMAIL_PATTERN.test(email)) {
+    ElMessage.warning('请输入正确的邮箱格式')
+    return
+  }
+
+  if (emailCountdown.value > 0 || emailSending.value) {
+    return
+  }
+
+  emailSending.value = true
+  try {
+    await sendEmailLoginCode({ email })
+    ElMessage.success('验证码已发送，请查收邮箱')
+    clearEmailTimer()
+    emailCountdown.value = 60
+    emailTimer = window.setInterval(() => {
+      emailCountdown.value -= 1
+      if (emailCountdown.value <= 0) {
+        clearEmailTimer()
+      }
+    }, 1000)
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '验证码发送失败')
+  } finally {
+    emailSending.value = false
+  }
 }
 
 function handleForgotPassword() {
@@ -441,6 +542,14 @@ function handleForgotPassword() {
               >
                 短信登录
               </button>
+              <button
+                class="login-modal__tab"
+                :class="{ 'is-active': activePanel === 'email' }"
+                type="button"
+                @click="activePanel = 'email'"
+              >
+                邮箱登录
+              </button>
             </div>
             <button
               v-if="isRegisterPanel"
@@ -457,6 +566,7 @@ function handleForgotPassword() {
             <p v-if="message">{{ message }}</p>
             <p v-else-if="isRegisterPanel">注册后先进入个人中心，后续可申请成为开发者并等待管理员审核。</p>
             <p v-else-if="isSmsPanel">短信界面已做好，短信服务接口暂未接入。</p>
+            <p v-else-if="isEmailPanel">请输入注册邮箱，查收验证码后完成邮箱登录。</p>
             <p v-else>请输入账号密码继续访问当前页面。</p>
           </div>
 
@@ -550,6 +660,55 @@ function handleForgotPassword() {
               </button>
               <button class="login-modal__primary-btn" type="submit">
                 登录
+              </button>
+            </div>
+          </form>
+
+          <form v-else-if="activePanel === 'email'" class="login-modal__form" @submit.prevent="handleEmailLogin">
+            <div class="login-modal__field-row">
+              <label>邮箱</label>
+              <ElInput v-model="emailForm.email" class="login-modal-input" placeholder="请输入邮箱">
+                <template #prefix>
+                  <el-icon><Message /></el-icon>
+                </template>
+              </ElInput>
+            </div>
+
+            <div class="login-modal__field-row">
+              <label>验证码</label>
+              <ElInput v-model="emailForm.code" class="login-modal-input" placeholder="请输入验证码">
+                <template #prefix>
+                  <el-icon><Message /></el-icon>
+                </template>
+                <template #append>
+                  <button
+                    class="login-modal__sms-btn"
+                    type="button"
+                    :disabled="emailSending || emailCountdown > 0"
+                    @click="handleSendEmailCode"
+                  >
+                    {{ emailSending ? '发送中…' : emailCountdown > 0 ? `${emailCountdown}s` : '获取验证码' }}
+                  </button>
+                </template>
+              </ElInput>
+            </div>
+
+            <div class="login-modal__helper-row">
+              <span>验证码会发送到已注册邮箱，5 分钟内有效</span>
+              <span>60 秒内不可重复发送</span>
+            </div>
+
+            <div class="login-modal__action-row">
+              <button
+                v-if="allowRegister"
+                class="login-modal__ghost-btn"
+                type="button"
+                @click="activePanel = 'register'"
+              >
+                注册
+              </button>
+              <button class="login-modal__primary-btn" type="submit" :disabled="submitting">
+                {{ submitting ? '登录中…' : '登录' }}
               </button>
             </div>
           </form>

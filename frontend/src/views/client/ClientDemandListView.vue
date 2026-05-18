@@ -75,6 +75,14 @@
             <strong class="summary-value">{{ getDeliveryTypeLabel(currentDemand.deliveryType) }}</strong>
           </article>
           <article class="summary-item">
+            <span class="summary-label">需求类型</span>
+            <strong class="summary-value">{{ getOrderTypeLabel(currentDemand.orderType) }}</strong>
+          </article>
+          <article class="summary-item">
+            <span class="summary-label">加急状态</span>
+            <strong class="summary-value">{{ formatUrgency(currentDemand.isUrgent, currentDemand.urgentBonus) }}</strong>
+          </article>
+          <article class="summary-item">
             <span class="summary-label">审核状态</span>
             <el-tag :type="getDemandReviewStatus(currentDemand.reviewStatus).type">
               {{ getDemandReviewStatus(currentDemand.reviewStatus).label }}
@@ -224,6 +232,21 @@ function formatExpectedDays(days) {
 
 function getDeliveryTypeLabel(type) {
   return type === 2 ? '分阶段交付' : '一次性交付'
+}
+
+function getOrderTypeLabel(type) {
+  return Number(type) === 2 ? '文档单' : '开发单'
+}
+
+function formatUrgency(isUrgent, urgentBonus) {
+  if (!isUrgent) {
+    return '常规节奏'
+  }
+  const bonus = Number(urgentBonus || 0)
+  if (bonus > 0) {
+    return `加急 +${bonus.toLocaleString()}`
+  }
+  return '加急需求'
 }
 
 onMounted(loadDemands)

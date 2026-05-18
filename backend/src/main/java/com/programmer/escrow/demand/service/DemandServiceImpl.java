@@ -11,6 +11,8 @@ import com.programmer.escrow.demand.model.DemandStagePlan;
 import com.programmer.escrow.demand.util.DemandPayloadUtils;
 import com.programmer.escrow.demand.vo.DemandDetailVO;
 import com.programmer.escrow.infra.sequence.BizNoGenerator;
+import com.programmer.escrow.user.entity.UserEntity;
+import com.programmer.escrow.user.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,16 +25,21 @@ import java.util.Objects;
 @Service
 public class DemandServiceImpl implements DemandService {
 
+    private static final BigDecimal ZERO = BigDecimal.ZERO;
+
     private final DemandMapper demandMapper;
     private final BizNoGenerator bizNoGenerator;
     private final DemandCategoryService demandCategoryService;
+    private final UserMapper userMapper;
 
     public DemandServiceImpl(DemandMapper demandMapper,
                              BizNoGenerator bizNoGenerator,
-                             DemandCategoryService demandCategoryService) {
+                             DemandCategoryService demandCategoryService,
+                             UserMapper userMapper) {
         this.demandMapper = demandMapper;
         this.bizNoGenerator = bizNoGenerator;
         this.demandCategoryService = demandCategoryService;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -80,12 +87,29 @@ public class DemandServiceImpl implements DemandService {
     }
 
     @Override
-    public DemandDetailVO getDemandDetail(Long demandId) {
-        DemandEntity entity = demandMapper.selectById(demandId);
-        if (entity == null) {
-            throw new BizException(404, "需求不存在");
+    public DemandDetailVO getMyDemandDetail(Long publisherId, Long demandId) {
+        DemandEntity entity = getDemandOrThrow(demandId);
+        if (!Objects.equals(entity.getPublisherId(), publisherId)) {
+            throw new BizException(403, "you are not allowed to view this demand");
         }
         return toDetailVO(entity);
+    }
+
+    @Override
+    public DemandDetailVO getMarketDemandDetail(Long demandId) {
+        DemandEntity entity = getDemandOrThrow(demandId);
+        if (!isMarketVisible(entity)) {
+            throw new BizException(404, "demand does not exist");
+        }
+        return toDetailVO(entity);
+    }
+
+    private DemandEntity getDemandOrThrow(Long demandId) {
+        DemandEntity entity = demandMapper.selectById(demandId);
+        if (entity == null) {
+            throw new BizException(404, "demand does not exist");
+        }
+        return entity;
     }
 
     private DemandDetailVO toDetailVO(DemandEntity entity) {
@@ -93,14 +117,22 @@ public class DemandServiceImpl implements DemandService {
         List<DemandFileItem> images = safeFiles(payload.getImages());
         List<DemandFileItem> attachments = safeFiles(payload.getAttachments());
         List<DemandStagePlan> stagePlans = safeStagePlans(payload.getStagePlans());
+        boolean urgent = Boolean.TRUE.equals(payload.getUrgent());
+        UserEntity publisher = userMapper.selectById(entity.getPublisherId());
         return DemandDetailVO.builder()
                 .id(entity.getId())
                 .demandNo(entity.getDemandNo())
+                .publisherId(entity.getPublisherId())
+                .publisherNickname(publisher == null ? null : publisher.getNickname())
+                .publisherAvatarUrl(publisher == null ? null : publisher.getAvatarUrl())
                 .title(entity.getTitle())
                 .summary(entity.getSummary())
                 .detail(entity.getDetail())
                 .categoryId(entity.getCategoryId())
                 .category(entity.getCategory())
+                .orderType(normalizeOrderType(payload.getOrderType()))
+                .urgent(urgent)
+                .urgentBonus(normalizeUrgentBonus(urgent, payload.getUrgentBonus()))
                 .budgetMin(entity.getBudgetMin())
                 .budgetMax(entity.getBudgetMax())
                 .expectedDays(entity.getExpectedDays())
@@ -118,37 +150,69 @@ public class DemandServiceImpl implements DemandService {
 
     private void validateDemand(DemandCreateDTO dto) {
         if (dto.getBudgetMax().compareTo(dto.getBudgetMin()) < 0) {
-            throw new BizException(400, "预算上限不能小于预算下限");
+            throw new BizException(400, "budgetMax cannot be less than budgetMin");
         }
         if (dto.getExpectedDays() == null || dto.getExpectedDays() <= 0) {
-            throw new BizException(400, "预计工期必须大于0");
+            throw new BizException(400, "expectedDays must be greater than 0");
         }
         if (!Objects.equals(dto.getDeliveryType(), 1) && !Objects.equals(dto.getDeliveryType(), 2)) {
-            throw new BizException(400, "交付类型不合法");
+            throw new BizException(400, "deliveryType is invalid");
         }
         if (dto.getCategoryId() == null) {
-            throw new BizException(400, "分类不能为空");
+            throw new BizException(400, "categoryId is required");
         }
+        if (dto.getOrderType() != null && !Objects.equals(dto.getOrderType(), 1) && !Objects.equals(dto.getOrderType(), 2)) {
+            throw new BizException(400, "orderType is invalid");
+        }
+        if (dto.getUrgentBonus() != null && dto.getUrgentBonus().compareTo(ZERO) < 0) {
+            throw new BizException(400, "urgentBonus cannot be negative");
+        }
+
+        boolean urgent = Boolean.TRUE.equals(dto.getUrgent());
+        if (urgent && normalizeUrgentBonus(true, dto.getUrgentBonus()).compareTo(ZERO) <= 0) {
+            throw new BizException(400, "urgentBonus is required when urgent is true");
+        }
+
         if (Objects.equals(dto.getDeliveryType(), 2)) {
             List<DemandStagePlan> stagePlans = safeStagePlans(dto.getStagePlans());
             if (stagePlans.size() < 2) {
-                throw new BizException(400, "多阶段交付至少需要两个阶段");
+                throw new BizException(400, "multi-stage delivery requires at least two valid stages");
             }
             BigDecimal stageTotal = stagePlans.stream()
                     .map(DemandStagePlan::getStageAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .reduce(ZERO, BigDecimal::add);
             if (stageTotal.compareTo(dto.getBudgetMin()) < 0 || stageTotal.compareTo(dto.getBudgetMax()) > 0) {
-                throw new BizException(400, "阶段结算总额需落在整体预算区间内");
+                throw new BizException(400, "stage total must stay within the budget range");
             }
         }
     }
 
     private DemandPayload buildPayload(DemandCreateDTO dto) {
+        boolean urgent = Boolean.TRUE.equals(dto.getUrgent());
         DemandPayload payload = new DemandPayload();
+        payload.setOrderType(normalizeOrderType(dto.getOrderType()));
+        payload.setUrgent(urgent);
+        payload.setUrgentBonus(normalizeUrgentBonus(urgent, dto.getUrgentBonus()));
         payload.setImages(safeFiles(dto.getImages()));
         payload.setAttachments(safeFiles(dto.getAttachments()));
         payload.setStagePlans(Objects.equals(dto.getDeliveryType(), 2) ? safeStagePlans(dto.getStagePlans()) : List.of());
         return payload;
+    }
+
+    private Integer normalizeOrderType(Integer orderType) {
+        return Objects.equals(orderType, 2) ? 2 : 1;
+    }
+
+    private BigDecimal normalizeUrgentBonus(boolean urgent, BigDecimal urgentBonus) {
+        if (!urgent || urgentBonus == null) {
+            return ZERO;
+        }
+        return urgentBonus;
+    }
+
+    private boolean isMarketVisible(DemandEntity entity) {
+        return Objects.equals(entity.getReviewStatus(), 1)
+                && (Objects.equals(entity.getStatus(), 2) || Objects.equals(entity.getStatus(), 3));
     }
 
     private List<DemandFileItem> safeFiles(List<DemandFileItem> items) {
@@ -161,7 +225,7 @@ public class DemandServiceImpl implements DemandService {
                 continue;
             }
             DemandFileItem normalized = new DemandFileItem();
-            normalized.setName(item.getName() == null || item.getName().isBlank() ? "未命名文件" : item.getName().trim());
+            normalized.setName(item.getName() == null || item.getName().isBlank() ? "Unnamed file" : item.getName().trim());
             normalized.setUrl(item.getUrl().trim());
             normalized.setContentType(item.getContentType());
             normalized.setSize(item.getSize());
@@ -177,12 +241,18 @@ public class DemandServiceImpl implements DemandService {
         List<DemandStagePlan> results = new ArrayList<>();
         for (int index = 0; index < items.size(); index++) {
             DemandStagePlan item = items.get(index);
-            if (item == null || item.getStageDesc() == null || item.getStageDesc().isBlank() || item.getStageAmount() == null) {
+            if (item == null
+                    || item.getStageDesc() == null
+                    || item.getStageDesc().isBlank()
+                    || item.getStageAmount() == null
+                    || item.getStageAmount().compareTo(ZERO) <= 0) {
                 continue;
             }
             DemandStagePlan normalized = new DemandStagePlan();
             normalized.setStageNo(index + 1);
-            normalized.setStageName("第" + (index + 1) + "阶段");
+            normalized.setStageName(item.getStageName() == null || item.getStageName().isBlank()
+                    ? "Stage " + (index + 1)
+                    : item.getStageName().trim());
             normalized.setStageDesc(item.getStageDesc().trim());
             normalized.setStageAmount(item.getStageAmount());
             results.add(normalized);

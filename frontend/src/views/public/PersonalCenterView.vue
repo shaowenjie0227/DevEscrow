@@ -1,14 +1,36 @@
 <template>
-  <section class="personal-center">
+  <section class="personal-center" :class="{ 'personal-center--dialog': props.embedded }">
     <article class="page-card hero-card">
-      <div>
-        <p class="hero-eyebrow">Personal Center</p>
-        <h1>个人首页</h1>
-        <p class="hero-desc">
-          先维护你的基础资料，再按需申请成为开发者。提交真实姓名、身份证号码、证件照片和技术栈后，
-          管理员审核通过，你才会获得接单和报价权限。
-        </p>
+      <div class="hero-toolbar" :class="{ 'hero-toolbar--dialog': !props.showBackButton }">
+        <button v-if="props.showBackButton" class="back-home" type="button" @click="goHome">
+          <el-icon><ArrowLeft /></el-icon>
+          返回首页
+        </button>
+        <span class="hero-chip hero-chip--status">{{ developerStatusTag.label }}</span>
       </div>
+
+      <div class="hero-header">
+        <div class="hero-copy">
+          <h1>个人中心</h1>
+          <p class="hero-desc">编辑基础资料，提交开发者申请。</p>
+        </div>
+
+        <div class="hero-summary">
+          <div class="hero-summary__item">
+            <span>基础资料</span>
+            <strong>{{ baseCompletionRate }}%</strong>
+          </div>
+          <div class="hero-summary__item">
+            <span>开发者资料</span>
+            <strong>{{ developerCompletionRate }}%</strong>
+          </div>
+          <div class="hero-summary__item">
+            <span>当前状态</span>
+            <strong>{{ developerStatusTag.label }}</strong>
+          </div>
+        </div>
+      </div>
+
       <div class="hero-actions">
         <el-button type="primary" @click="goClientHome">进入用户工作台</el-button>
         <el-button v-if="isApprovedDeveloper" @click="goDeveloperHome">进入开发者工作台</el-button>
@@ -16,12 +38,13 @@
     </article>
 
     <div class="dashboard-grid">
-      <article class="page-card">
-        <div class="toolbar">
+      <article class="page-card section-card">
+        <div class="toolbar toolbar--section">
           <div>
             <h2>基础资料</h2>
-            <p>这部分决定你在平台上的基础展示信息。</p>
+            <p>用于展示昵称、联系方式和个人简介。</p>
           </div>
+          <span class="section-chip">{{ baseCompletionRate }}% 已完善</span>
         </div>
 
         <el-form :model="baseForm" label-position="top" class="form-grid">
@@ -38,38 +61,19 @@
             <el-input v-model="baseForm.intro" type="textarea" :rows="5" placeholder="简单介绍一下你的背景和擅长方向" />
           </el-form-item>
           <div class="full-width submit-row">
-            <span class="submit-note">基础资料不会影响你的普通用户权限。</span>
+            <span class="submit-note">保存后立即生效。</span>
             <el-button type="primary" :loading="savingBase" @click="saveBaseProfile">保存基础资料</el-button>
           </div>
         </el-form>
       </article>
 
-      <article class="page-card">
-        <div class="toolbar">
+      <article class="page-card section-card">
+        <div class="toolbar toolbar--section">
           <div>
             <h2>开发者申请</h2>
-            <p>申请通过前，你仍然是普通用户；申请通过后才会开放接单权限。</p>
+            <p>填写实名、证件和技术栈后提交审核。</p>
           </div>
-          <el-tag :type="developerStatusTag.type">{{ developerStatusTag.label }}</el-tag>
-        </div>
-
-        <div class="status-panel">
-          <div class="status-item">
-            <span>开发者审核</span>
-            <strong>{{ developerStatusTag.label }}</strong>
-          </div>
-          <div class="status-item">
-            <span>实名审核</span>
-            <strong>{{ identityStatusTag.label }}</strong>
-          </div>
-          <div class="status-item">
-            <span>技术栈审核</span>
-            <strong>{{ skillAuditStatusTag.label }}</strong>
-          </div>
-          <div class="status-item status-item--wide">
-            <span>审核备注</span>
-            <strong>{{ developerForm.skillAuditReason || '暂无' }}</strong>
-          </div>
+          <span class="section-chip section-chip--developer">{{ developerStatusTag.label }}</span>
         </div>
 
         <el-form :model="developerForm" label-position="top" class="form-grid">
@@ -100,9 +104,7 @@
             </div>
           </el-form-item>
           <div class="full-width submit-row">
-            <span class="submit-note">
-              提交后会进入管理员审核。若被驳回，可以根据备注修改后重新提交。
-            </span>
+            <span class="submit-note">提交后进入审核。</span>
             <el-button type="primary" :loading="savingDeveloper" @click="saveDeveloperProfile">
               {{ developerStatusValue === 1 ? '重新提交申请' : '申请成为开发者' }}
             </el-button>
@@ -116,11 +118,23 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { applyDeveloperProfile, getDeveloperProfile, updateBasicProfile } from '@/api/modules/auth'
 import { fetchCurrentSkillTags } from '@/api/modules/common'
 import { useAuthStore } from '@/stores/auth'
 import UserImageUploadField from '@/components/user/UserImageUploadField.vue'
+
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  },
+  showBackButton: {
+    type: Boolean,
+    default: true
+  }
+})
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -143,18 +157,32 @@ const developerForm = reactive({
   idCardBackUrl: '',
   selfieUrl: '',
   skillTagIds: [],
-  developerStatus: 0,
-  idVerifyStatus: 0,
-  skillAuditStatus: 0,
-  skillAuditReason: ''
+  developerStatus: 0
 })
 
 const developerStatusValue = computed(() => Number(developerForm.developerStatus || 0))
 const isApprovedDeveloper = computed(() => developerStatusValue.value === 2)
 
 const developerStatusTag = computed(() => formatStatus(developerStatusValue.value))
-const identityStatusTag = computed(() => formatStatus(Number(developerForm.idVerifyStatus || 0)))
-const skillAuditStatusTag = computed(() => formatStatus(Number(developerForm.skillAuditStatus || 0)))
+
+const baseCompletionRate = computed(() => {
+  const fields = [baseForm.nickname, baseForm.phone, baseForm.email, baseForm.intro]
+  const completed = fields.filter((value) => String(value || '').trim()).length
+  return Math.round((completed / fields.length) * 100)
+})
+
+const developerCompletionRate = computed(() => {
+  const fields = [
+    developerForm.realName,
+    developerForm.idCardNo,
+    developerForm.idCardFrontUrl,
+    developerForm.idCardBackUrl,
+    developerForm.selfieUrl
+  ]
+  const completed = fields.filter((value) => String(value || '').trim()).length
+  const hasSkillTags = Array.isArray(developerForm.skillTagIds) && developerForm.skillTagIds.length > 0 ? 1 : 0
+  return Math.round(((completed + hasSkillTags) / 6) * 100)
+})
 
 function formatStatus(value) {
   if (value === 1) return { label: '审核中', type: 'warning' }
@@ -170,6 +198,10 @@ function goClientHome() {
 
 function goDeveloperHome() {
   router.push('/developer/home')
+}
+
+function goHome() {
+  router.push('/')
 }
 
 async function loadSkillTags() {
@@ -203,9 +235,6 @@ async function loadProfile() {
     developerForm.selfieUrl = data.selfieUrl || ''
     developerForm.skillTagIds = Array.isArray(data.developerSkillTagIds) ? data.developerSkillTagIds : []
     developerForm.developerStatus = data.developerStatus ?? 0
-    developerForm.idVerifyStatus = data.idVerifyStatus ?? 0
-    developerForm.skillAuditStatus = data.skillAuditStatus ?? 0
-    developerForm.skillAuditReason = data.skillAuditReason || ''
 
     authStore.userInfo = {
       ...authStore.userInfo,
@@ -278,32 +307,109 @@ onMounted(async () => {
 <style scoped>
 .personal-center {
   display: grid;
-  gap: 20px;
+  gap: 22px;
+  padding-bottom: 12px;
+}
+
+.personal-center--dialog {
+  padding-bottom: 0;
 }
 
 .hero-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 24px;
+  padding: 30px;
+  background:
+    radial-gradient(circle at top right, rgba(36, 85, 214, 0.12), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(15, 133, 124, 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
+}
+
+.hero-main,
+.hero-side {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-main {
+  display: grid;
+  gap: 18px;
+}
+
+.hero-toolbar,
+.hero-toolbar__meta {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-toolbar--dialog {
+  justify-content: flex-end;
+}
+
+.back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.back-home:hover {
+  transform: translateY(-1px);
+  border-color: rgba(36, 85, 214, 0.24);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hero-chip--status {
+  background: rgba(36, 85, 214, 0.1);
+  color: #2455d6;
 }
 
 .hero-eyebrow {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 12px;
-  letter-spacing: 0.18em;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #94a3b8;
 }
 
 .hero-card h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: clamp(34px, 4vw, 48px);
+  line-height: 0.96;
   color: #0f172a;
 }
 
 .hero-desc {
-  margin: 12px 0 0;
+  margin: 0;
   max-width: 760px;
   line-height: 1.8;
   color: #475569;
@@ -315,39 +421,195 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
-.dashboard-grid {
+.hero-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
-.status-panel {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+.hero-stat {
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
-.status-item {
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  display: grid;
-  gap: 6px;
-}
-
-.status-item span {
-  font-size: 13px;
+.hero-stat span,
+.signal-card__head span,
+.progress-card__head span {
   color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.status-item strong {
+.hero-stat strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 28px;
+  line-height: 1;
   color: #0f172a;
 }
 
-.status-item--wide {
-  grid-column: 1 / -1;
+.hero-stat p {
+  margin-top: 10px;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.hero-side {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.signal-card,
+.progress-card,
+.step-list {
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.84);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.signal-card {
+  background:
+    linear-gradient(135deg, rgba(36, 85, 214, 0.12), rgba(255, 255, 255, 0.9) 42%),
+    rgba(248, 250, 252, 0.86);
+}
+
+.signal-card__head,
+.progress-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.signal-card__head strong,
+.progress-card__head strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.signal-card p {
+  margin-top: 12px;
+  color: #475569;
+  line-height: 1.8;
+}
+
+.progress-card--accent {
+  background:
+    linear-gradient(135deg, rgba(15, 133, 124, 0.1), rgba(255, 255, 255, 0.88) 40%),
+    rgba(248, 250, 252, 0.84);
+}
+
+.progress-track {
+  position: relative;
+  height: 10px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2455d6, #6f8df1);
+}
+
+.progress-card--accent .progress-track span {
+  background: linear-gradient(90deg, #0f857c, #38b2a6);
+}
+
+.step-list {
+  display: grid;
+  gap: 14px;
+}
+
+.step-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-indicator {
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  border: 2px solid rgba(148, 163, 184, 0.42);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 1);
+}
+
+.step-item.is-done .step-indicator {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: #10b981;
+}
+
+.step-item strong {
+  display: block;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.step-item p {
+  margin-top: 6px;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+  gap: 20px;
+}
+
+.section-card {
+  padding: 30px;
+}
+
+.toolbar--section {
+  align-items: center;
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(36, 85, 214, 0.1);
+  color: #2455d6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.section-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(36, 85, 214, 0.08);
+  color: #2455d6;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.section-chip--developer {
+  background: rgba(15, 133, 124, 0.1);
+  color: #0f857c;
 }
 
 .form-grid {
@@ -365,6 +627,10 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.75);
 }
 
 .submit-note {
@@ -376,20 +642,76 @@ onMounted(async () => {
   width: 100%;
 }
 
+.personal-center :deep(.el-form-item__label) {
+  margin-bottom: 8px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.personal-center :deep(.el-input__wrapper),
+.personal-center :deep(.el-select__wrapper) {
+  min-height: 48px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
+  transition: box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.personal-center :deep(.el-input__wrapper:hover),
+.personal-center :deep(.el-select__wrapper:hover) {
+  box-shadow: inset 0 0 0 1px rgba(36, 85, 214, 0.22);
+}
+
+.personal-center :deep(.el-input__wrapper.is-focus),
+.personal-center :deep(.el-select__wrapper.is-focused) {
+  background: #ffffff;
+  box-shadow:
+    inset 0 0 0 1px rgba(36, 85, 214, 0.56),
+    0 0 0 4px rgba(36, 85, 214, 0.08);
+}
+
+.personal-center :deep(.el-textarea__inner) {
+  min-height: 146px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.14);
+}
+
+.personal-center :deep(.el-textarea__inner:focus) {
+  background: #ffffff;
+  box-shadow:
+    inset 0 0 0 1px rgba(36, 85, 214, 0.56),
+    0 0 0 4px rgba(36, 85, 214, 0.08);
+}
+
 @media (max-width: 960px) {
+  .hero-card,
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
 
-  .hero-card {
-    flex-direction: column;
+  .hero-stats {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .form-grid,
-  .status-panel {
+  .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hero-card,
+  .section-card {
+    padding: 22px;
+  }
+
+  .hero-toolbar {
+    align-items: stretch;
+  }
+
+  .back-home {
+    width: 100%;
+    justify-content: center;
   }
 
   .submit-row {

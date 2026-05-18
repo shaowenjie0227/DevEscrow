@@ -33,6 +33,8 @@ public class UserEntity {
     private BigDecimal rating;
     private Integer completedOrderCount;
     private Integer status;
+    private String banReason;
+    private LocalDateTime banExpiresAt;
     private LocalDateTime lastLoginAt;
     private Integer version;
     private LocalDateTime createdAt;

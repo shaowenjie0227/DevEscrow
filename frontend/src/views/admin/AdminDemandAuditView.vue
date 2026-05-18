@@ -52,7 +52,7 @@
       v-model="reviewVisible"
       append-to-body
       class="review-dialog"
-      width="880px"
+      width="960px"
       :title="currentDemandCanAudit ? '需求审核' : '需求详情'"
     >
       <template v-if="currentDemand">
@@ -102,6 +102,31 @@
 
           <section class="review-card">
             <div class="review-card__head">
+              <strong>发布用户</strong>
+              <span>{{ currentDemand.publisherPhone || currentDemand.publisherEmail ? '可直接核验联系方式' : '暂未留联系方式' }}</span>
+            </div>
+            <div class="publisher-grid">
+              <article class="review-item">
+                <span>用户名称</span>
+                <strong>{{ currentDemand.publisherNickname || currentDemand.publisherRealName || '-' }}</strong>
+              </article>
+              <article class="review-item">
+                <span>账号</span>
+                <strong>{{ currentDemand.publisherUserNo || '-' }}</strong>
+              </article>
+              <article class="review-item">
+                <span>手机号</span>
+                <strong>{{ currentDemand.publisherPhone || '-' }}</strong>
+              </article>
+              <article class="review-item">
+                <span>邮箱</span>
+                <strong>{{ currentDemand.publisherEmail || '-' }}</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="review-card">
+            <div class="review-card__head">
               <strong>需求摘要</strong>
               <span>{{ currentDemand.summary ? '已填写' : '未填写' }}</span>
             </div>
@@ -128,6 +153,61 @@
             <span>{{ currentDemand.attachments?.length || 0 }} 个附件</span>
             <span>{{ currentDemand.quoteCount ?? 0 }} 份报价</span>
           </div>
+
+          <section class="review-card">
+            <div class="review-card__head">
+              <strong>需求图片</strong>
+              <span>{{ currentDemandImages.length ? '点击图片可放大查看' : '暂无上传图片' }}</span>
+            </div>
+            <div v-if="currentDemandImages.length" class="resource-gallery">
+              <article
+                v-for="(image, index) in currentDemandImages"
+                :key="`${image.url}-${index}`"
+                class="resource-gallery__item"
+              >
+                <el-image
+                  :src="image.url"
+                  :alt="image.name || `需求图片 ${index + 1}`"
+                  :initial-index="index"
+                  :preview-src-list="currentDemandImagePreviewList"
+                  class="resource-gallery__image"
+                  fit="cover"
+                  preview-teleported
+                  show-progress
+                >
+                  <template #progress="{ activeIndex, total }">
+                    <span class="resource-viewer-progress">({{ activeIndex + 1 }}/{{ total }})</span>
+                  </template>
+                </el-image>
+              </article>
+            </div>
+            <div v-else class="resource-empty">暂无上传图片</div>
+          </section>
+
+          <section class="review-card">
+            <div class="review-card__head">
+              <strong>需求附件</strong>
+              <span>{{ currentDemandAttachments.length ? '支持下载后查看' : '暂无上传附件' }}</span>
+            </div>
+            <div v-if="currentDemandAttachments.length" class="attachment-list">
+              <a
+                v-for="(attachment, index) in currentDemandAttachments"
+                :key="`${attachment.url}-${index}`"
+                :href="attachment.url"
+                :download="attachment.name || `附件-${index + 1}`"
+                class="attachment-item"
+                rel="noreferrer"
+                target="_blank"
+              >
+                <div class="attachment-item__copy">
+                  <strong>{{ attachment.name || `附件 ${index + 1}` }}</strong>
+                  <p>{{ formatAttachmentMeta(attachment) }}</p>
+                </div>
+                <span class="attachment-item__action">下载附件</span>
+              </a>
+            </div>
+            <div v-else class="resource-empty">暂无上传附件</div>
+          </section>
 
           <section v-if="!currentDemandCanAudit" class="audit-result" :class="{ 'is-rejected': currentDemand.reviewStatus === 2 }">
             <strong>{{ currentDemand.reviewStatus === 2 ? '本次审核已驳回' : '本次审核已通过' }}</strong>
@@ -182,6 +262,31 @@ const currentDemand = ref(null)
 const auditRemark = ref('')
 
 const currentDemandCanAudit = computed(() => canAudit(currentDemand.value))
+const currentDemandImages = computed(() => {
+  const images = Array.isArray(currentDemand.value?.images) ? currentDemand.value.images : []
+  if (images.length) {
+    return images
+  }
+  if (currentDemand.value?.coverImage) {
+    return [
+      {
+        name: currentDemand.value.title || '需求图片',
+        url: currentDemand.value.coverImage,
+        contentType: 'image/*',
+        size: null
+      }
+    ]
+  }
+  return []
+})
+const currentDemandAttachments = computed(() => {
+  return Array.isArray(currentDemand.value?.attachments) ? currentDemand.value.attachments : []
+})
+const currentDemandImagePreviewList = computed(() => {
+  return currentDemandImages.value
+    .map((image) => image?.url)
+    .filter((url) => Boolean(url))
+})
 
 function canAudit(row) {
   return Number(row?.reviewStatus) === 0
@@ -281,6 +386,31 @@ function formatCurrency(value) {
   return `￥${amount.toLocaleString()}`
 }
 
+function formatFileSize(size) {
+  const value = Number(size || 0)
+  if (!value) {
+    return '大小未知'
+  }
+  if (value >= 1024 * 1024) {
+    return `${(value / (1024 * 1024)).toFixed(2)} MB`
+  }
+  if (value >= 1024) {
+    return `${(value / 1024).toFixed(1)} KB`
+  }
+  return `${value} B`
+}
+
+function formatAttachmentMeta(attachment) {
+  const meta = []
+  if (attachment?.contentType) {
+    meta.push(attachment.contentType)
+  }
+  if (attachment?.size) {
+    meta.push(formatFileSize(attachment.size))
+  }
+  return meta.join(' · ') || '通用附件'
+}
+
 onMounted(loadDemands)
 </script>
 
@@ -318,6 +448,9 @@ onMounted(loadDemands)
 .review-dialog__body {
   display: grid;
   gap: 18px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .review-grid {
@@ -345,6 +478,7 @@ onMounted(loadDemands)
   font-size: 15px;
   color: #0f172a;
   line-height: 1.5;
+  word-break: break-word;
 }
 
 .review-card {
@@ -379,6 +513,12 @@ onMounted(loadDemands)
 
 .review-card__detail {
   white-space: pre-wrap;
+}
+
+.publisher-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .stage-list {
@@ -425,6 +565,114 @@ onMounted(loadDemands)
   font-weight: 600;
 }
 
+.resource-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.resource-gallery__item {
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.resource-gallery__image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: zoom-in;
+}
+
+:deep(.resource-gallery__image .el-image__inner) {
+  width: 100%;
+  height: 100%;
+}
+
+.resource-viewer-progress {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.62);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.attachment-list {
+  display: grid;
+  gap: 12px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(248, 250, 252, 0.72);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.attachment-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+}
+
+.attachment-item__copy {
+  min-width: 0;
+}
+
+.attachment-item__copy strong,
+.attachment-item__copy p {
+  display: block;
+  word-break: break-word;
+}
+
+.attachment-item__copy strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.attachment-item__copy p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.attachment-item__action {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.resource-empty {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px dashed rgba(148, 163, 184, 0.2);
+  background: rgba(248, 250, 252, 0.62);
+  color: #94a3b8;
+  text-align: center;
+}
+
 .audit-result,
 .audit-form {
   display: grid;
@@ -459,8 +707,15 @@ onMounted(loadDemands)
   gap: 12px;
 }
 
+:deep(.review-dialog) {
+  width: min(960px, calc(100vw - 32px)) !important;
+  margin-top: 4vh !important;
+}
+
 @media (max-width: 900px) {
-  .review-grid {
+  .review-grid,
+  .publisher-grid,
+  .resource-gallery {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -475,13 +730,16 @@ onMounted(loadDemands)
     justify-content: flex-end;
   }
 
-  .review-grid {
+  .review-grid,
+  .publisher-grid,
+  .resource-gallery {
     grid-template-columns: 1fr;
   }
 
   .review-card__head,
   .audit-form__head,
-  .stage-item {
+  .stage-item,
+  .attachment-item {
     flex-direction: column;
     align-items: flex-start;
   }

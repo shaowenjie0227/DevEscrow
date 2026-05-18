@@ -23,6 +23,10 @@ public interface OrderMapper {
     List<OrderEntity> selectAdminList(@Param("status") Integer status,
                                       @Param("keyword") String keyword);
 
+    long countByStatus(@Param("status") Integer status);
+
+    long countByStatuses(@Param("statuses") List<Integer> statuses);
+
     int updateToPaid(@Param("id") Long id,
                      @Param("clientId") Long clientId,
                      @Param("paidAt") LocalDateTime paidAt);

@@ -12,13 +12,19 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     private final LoginWebSocketHandler loginWebSocketHandler;
     private final LoginWebSocketHandshakeInterceptor handshakeInterceptor;
+    private final ChatWebSocketHandler chatWebSocketHandler;
+    private final ChatWebSocketHandshakeInterceptor chatHandshakeInterceptor;
     private final CorsProperties corsProperties;
 
     public WebSocketConfig(LoginWebSocketHandler loginWebSocketHandler,
                            LoginWebSocketHandshakeInterceptor handshakeInterceptor,
+                           ChatWebSocketHandler chatWebSocketHandler,
+                           ChatWebSocketHandshakeInterceptor chatHandshakeInterceptor,
                            CorsProperties corsProperties) {
         this.loginWebSocketHandler = loginWebSocketHandler;
         this.handshakeInterceptor = handshakeInterceptor;
+        this.chatWebSocketHandler = chatWebSocketHandler;
+        this.chatHandshakeInterceptor = chatHandshakeInterceptor;
         this.corsProperties = corsProperties;
     }
 
@@ -26,6 +32,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(loginWebSocketHandler, "/ws/login/*")
                 .addInterceptors(handshakeInterceptor)
+                .setAllowedOrigins(corsProperties.getAllowedOrigins().toArray(String[]::new));
+        registry.addHandler(chatWebSocketHandler, "/ws/chat")
+                .addInterceptors(chatHandshakeInterceptor)
                 .setAllowedOrigins(corsProperties.getAllowedOrigins().toArray(String[]::new));
     }
 }

@@ -5,6 +5,8 @@ public final class RedisKeys {
     public static final String LOGIN_QR = "LOGIN_QR:%s";
     public static final String LOGIN_QR_CODE = "LOGIN_QR_CODE:%s";
     public static final String LOGIN_QR_SCAN_LOCK = "LOGIN_QR_SCAN_LOCK:%s";
+    public static final String LOGIN_EMAIL_CODE = "LOGIN_EMAIL_CODE:%s";
+    public static final String LOGIN_EMAIL_CODE_SEND_LOCK = "LOGIN_EMAIL_CODE_SEND_LOCK:%s";
     public static final String LOGIN_USER = "LOGIN_USER:%s";
     public static final String JWT_BLACKLIST = "JWT_BLACKLIST:%s";
     public static final String WECHAT_ACCESS_TOKEN = "WECHAT:ACCESS_TOKEN";

@@ -36,19 +36,46 @@
     </insert>
 
     <select id="selectById" resultMap="CommunityPostResultMap">
-        select <include refid="BaseColumns"/> from `community_post` where id = #{id} limit 1
-    </select>
-
-    <select id="selectActiveList" resultMap="CommunityPostResultMap">
         select <include refid="BaseColumns"/>
         from `community_post`
-        where status = 1
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectList" resultMap="CommunityPostResultMap">
+        select <include refid="BaseColumns"/>
+        from `community_post`
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+            <if test="forumName != null and forumName != ''">
+                and forum_name = #{forumName}
+            </if>
+            <if test="creatorId != null">
+                and creator_id = #{creatorId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and (
+                    title like concat('%', #{keyword}, '%')
+                    or summary like concat('%', #{keyword}, '%')
+                    or content like concat('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
         order by created_at desc, id desc
     </select>
 
     <update id="incrementLike">
         update `community_post`
         set like_count = like_count + 1,
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="decrementLike">
+        update `community_post`
+        set like_count = case when like_count &gt; 0 then like_count - 1 else 0 end,
             updated_at = now()
         where id = #{id}
     </update>
@@ -60,10 +87,29 @@
         where id = #{id}
     </update>
 
-    <update id="incrementReplyCount">
+    <update id="decrementFavorite">
         update `community_post`
-        set reply_count = reply_count + 1,
+        set favorite_count = case when favorite_count &gt; 0 then favorite_count - 1 else 0 end,
             updated_at = now()
         where id = #{id}
     </update>
+
+    <update id="updateReplyCount">
+        update `community_post`
+        set reply_count = #{replyCount},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `community_post`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from `community_post`
+        where id = #{id}
+    </delete>
 </mapper>
