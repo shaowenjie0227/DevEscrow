@@ -126,35 +126,39 @@ async function handleLogin() {
   </ElDialog>
 </template>
 
-<style scoped>
-:deep(.admin-login-modal-shell .el-dialog) {
+<style>
+.admin-login-modal-shell.el-dialog {
   max-width: calc(100vw - 24px);
+  padding: 0 !important;
+  border: 0 !important;
   border-radius: 32px;
   background: transparent;
   box-shadow: none !important;
 }
 
-:deep(.admin-login-modal-shell .el-dialog__header) {
+.admin-login-modal-shell .el-dialog__header {
   display: none;
 }
 
-:deep(.admin-login-modal-shell .el-dialog__body) {
+.admin-login-modal-shell .el-dialog__body {
   padding: 0;
 }
 
-:deep(.admin-login-modal-shell .el-input__wrapper) {
+.admin-login-modal-shell .el-input__wrapper {
   min-height: 52px;
   border-radius: 16px !important;
   background: rgba(244, 246, 248, 0.96) !important;
   box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.08) !important;
 }
 
-:deep(.admin-login-modal-shell .el-input__wrapper.is-focus) {
+.admin-login-modal-shell .el-input__wrapper.is-focus {
   box-shadow:
     inset 0 0 0 1px rgba(49, 95, 255, 0.8) !important,
     0 0 0 5px rgba(49, 95, 255, 0.12) !important;
 }
+</style>
 
+<style scoped>
 .admin-login-modal {
   padding: 30px;
   border-radius: 32px;

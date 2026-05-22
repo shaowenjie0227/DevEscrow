@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Footer from '@/components/home/Footer.vue'
 import FeedGrid from '@/components/home/FeedGrid.vue'
 import HeroBanner from '@/components/home/HeroBanner.vue'
@@ -16,6 +16,7 @@ import {
   fetchPublicMarketDemands
 } from '@/api/modules/demand'
 import { techCategories } from '@/mock/home'
+import { createAiAssistantOpenQuery } from '@/utils/aiDemandAssistant'
 import type {
   HeroMetric,
   HomeAdminContact,
@@ -80,6 +81,7 @@ const defaultStatsBar: StatItem[] = [
   }
 ]
 
+const route = useRoute()
 const router = useRouter()
 const banners = ref<any[]>([])
 const notices = ref<HomeNoticeItem[]>([])
@@ -177,11 +179,21 @@ function navigateByUrl(url?: string) {
     window.open(url, '_blank', 'noopener')
     return
   }
+  if (url === '/publish') {
+    router.replace({
+      path: route.path,
+      query: createAiAssistantOpenQuery(route.query)
+    })
+    return
+  }
   router.push(url)
 }
 
 function goPublish() {
-  router.push('/publish')
+  router.replace({
+    path: route.path,
+    query: createAiAssistantOpenQuery(route.query)
+  })
 }
 
 function goMarket() {

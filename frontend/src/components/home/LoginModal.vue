@@ -84,7 +84,7 @@ let emailTimer: number | null = null
 const loginCodeDisplay = computed(() => loginCode.value || '------')
 const loginEntryLink = computed(() => {
   if (!loginEntryUrl.value) {
-    return 'http://localhost:8080/wx/login-entry'
+    return `${window.location.origin}/wx/login-entry`
   }
   return loginCode.value ? `${loginEntryUrl.value}?code=${loginCode.value}` : loginEntryUrl.value
 })
@@ -780,23 +780,27 @@ function handleForgotPassword() {
   </ElDialog>
 </template>
 
-<style scoped>
-:deep(.login-modal-shell .el-dialog) {
+<style>
+.login-modal-shell.el-dialog {
   max-width: calc(100vw - 24px);
+  padding: 0 !important;
+  border: 0 !important;
   border-radius: 18px;
   overflow: hidden;
   background: transparent;
   box-shadow: none !important;
 }
 
-:deep(.login-modal-shell .el-dialog__header) {
+.login-modal-shell .el-dialog__header {
   display: none;
 }
 
-:deep(.login-modal-shell .el-dialog__body) {
+.login-modal-shell .el-dialog__body {
   padding: 0;
 }
+</style>
 
+<style scoped>
 .login-modal {
   position: relative;
   background: #ffffff;

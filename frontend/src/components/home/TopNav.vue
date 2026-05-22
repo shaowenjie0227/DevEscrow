@@ -3,11 +3,17 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Bell, ChatDotRound, MessageBox, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import AiDemandAssistantDialog from './AiDemandAssistantDialog.vue'
 import LoginModal from './LoginModal.vue'
 import { logout as logoutRequest } from '@/api/modules/auth'
 import { useChatUnreadCount } from '@/composables/useChatUnreadCount'
 import { useInboxUnreadCount } from '@/composables/useInboxUnreadCount'
 import { useAuthStore } from '@/stores/auth'
+import {
+  createAiAssistantClosedQuery,
+  createAiAssistantOpenQuery,
+  isAiAssistantQueryActive
+} from '@/utils/aiDemandAssistant'
 import { resolveWorkspaceChatPath, resolveWorkspaceInboxPath } from '@/utils/workspace'
 
 const route = useRoute()
@@ -40,6 +46,15 @@ const { unreadCount: inboxUnreadCount } = useInboxUnreadCount(authStore)
 const totalUnread = computed(() => Number(chatUnreadCount.value || 0) + Number(inboxUnreadCount.value || 0))
 const workspaceChatPath = computed(() => resolveWorkspaceChatPath(authStore.userInfo))
 const workspaceInboxPath = computed(() => resolveWorkspaceInboxPath(authStore.userInfo))
+const assistantVisible = computed({
+  get: () => isAiAssistantQueryActive(route.query),
+  set: (value: boolean) => {
+    router.replace({
+      path: route.path,
+      query: value ? createAiAssistantOpenQuery(route.query) : createAiAssistantClosedQuery(route.query)
+    })
+  }
+})
 
 const chatNoticeText = computed(() => {
   if (chatUnreadCount.value > 0) {
@@ -92,6 +107,10 @@ function isActive(path: string) {
 
 function goTo(path: string) {
   router.push(path)
+}
+
+function openAssistant() {
+  assistantVisible.value = true
 }
 
 function openLogin() {
@@ -183,7 +202,6 @@ function openNoticeTarget(path: string) {
         </div>
 
         <nav class="market-nav__links" aria-label="主导航">
-          <span class="market-nav__links-label">Sections</span>
           <div class="market-nav__links-track">
             <button
               v-for="item in navItems"
@@ -199,9 +217,9 @@ function openNoticeTarget(path: string) {
         </nav>
 
         <div class="market-nav__actions">
-          <button class="market-nav__action market-nav__action--primary" type="button" @click="goTo('/publish')">
+          <button class="market-nav__action market-nav__action--primary" type="button" @click="openAssistant">
             <el-icon><Plus /></el-icon>
-            发布需求
+            AI对话助手
           </button>
         </div>
 
@@ -288,22 +306,24 @@ function openNoticeTarget(path: string) {
     >
       <PersonalCenterView v-if="personalCenterVisible" :show-back-button="false" embedded />
     </el-dialog>
+
+    <AiDemandAssistantDialog v-model="assistantVisible" />
   </header>
 </template>
 
-<style scoped>
-.personal-center-dialog :deep(.el-dialog) {
+<style>
+.personal-center-dialog.el-dialog {
   width: min(1100px, calc(100vw - 32px));
   border-radius: 24px;
   overflow: hidden;
 }
 
-.personal-center-dialog :deep(.el-dialog__header) {
+.personal-center-dialog .el-dialog__header {
   margin-right: 0;
   padding: 20px 20px 0;
 }
 
-.personal-center-dialog :deep(.el-dialog__body) {
+.personal-center-dialog .el-dialog__body {
   max-height: calc(100vh - 140px);
   padding: 20px;
   overflow-y: auto;

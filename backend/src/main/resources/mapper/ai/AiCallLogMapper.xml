@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.ai.mapper.AiCallLogMapper">
+    <resultMap id="AiCallLogResultMap" type="com.programmer.escrow.ai.entity.AiCallLogEntity">
+        <id column="id" property="id"/>
+        <result column="scene_code" property="sceneCode"/>
+        <result column="prompt_version" property="promptVersion"/>
+        <result column="provider" property="provider"/>
+        <result column="model" property="model"/>
+        <result column="creator_user_id" property="creatorUserId"/>
+        <result column="request_digest" property="requestDigest"/>
+        <result column="request_preview" property="requestPreview"/>
+        <result column="context_count" property="contextCount"/>
+        <result column="cache_hit" property="cacheHit"/>
+        <result column="fallback_used" property="fallbackUsed"/>
+        <result column="status" property="status"/>
+        <result column="latency_ms" property="latencyMs"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="result_preview" property="resultPreview"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, scene_code, prompt_version, provider, model, creator_user_id, request_digest, request_preview,
+        context_count, cache_hit, fallback_used, status, latency_ms, error_message, result_preview, created_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.ai.entity.AiCallLogEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `ai_call_log` (
+            scene_code, prompt_version, provider, model, creator_user_id, request_digest, request_preview,
+            context_count, cache_hit, fallback_used, status, latency_ms, error_message, result_preview, created_at
+        )
+        values (
+            #{sceneCode}, #{promptVersion}, #{provider}, #{model}, #{creatorUserId}, #{requestDigest}, #{requestPreview},
+            #{contextCount}, #{cacheHit}, #{fallbackUsed}, #{status}, #{latencyMs}, #{errorMessage}, #{resultPreview}, #{createdAt}
+        )
+    </insert>
+
+    <select id="selectRecent" resultMap="AiCallLogResultMap">
+        select <include refid="BaseColumns"/>
+        from `ai_call_log`
+        <where>
+            <if test="sceneCode != null and sceneCode != ''">
+                and scene_code = #{sceneCode}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+        order by id desc
+        limit #{limit}
+    </select>
+</mapper>

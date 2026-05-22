@@ -2,6 +2,8 @@ server:
   port: ${SERVER_PORT:8080}
 
 spring:
+  config:
+    import: optional:file:./config/application-local.yml
   application:
     name: programmer-escrow-backend
   datasource:
@@ -51,6 +53,9 @@ app:
   cors:
     allowed-origins:
       - ${FRONTEND_ORIGIN:http://localhost:5173}
+      - ${FRONTEND_ORIGIN_ALT:http://127.0.0.1:5173}
+      - ${FRONTEND_ORIGIN_PREVIEW:http://localhost:4173}
+      - ${FRONTEND_ORIGIN_PREVIEW_ALT:http://127.0.0.1:4173}
   jwt:
     issuer: ${APP_JWT_ISSUER:programmer-escrow}
     secret: ${APP_JWT_SECRET:change-this-jwt-secret-to-a-very-long-random-string-2026}
@@ -99,3 +104,17 @@ app:
     quote-prefix: ${APP_SEQUENCE_QUOTE_PREFIX:QT}
     order-prefix: ${APP_SEQUENCE_ORDER_PREFIX:OD}
     dispute-prefix: ${APP_SEQUENCE_DISPUTE_PREFIX:DP}
+  ai:
+    enabled: ${APP_AI_ENABLED:false}
+    fallback-enabled: ${APP_AI_FALLBACK_ENABLED:true}
+    provider: ${APP_AI_PROVIDER:openai-compatible}
+    base-url: ${APP_AI_BASE_URL:https://api.openai.com}
+    chat-path: ${APP_AI_CHAT_PATH:/v1/chat/completions}
+    api-key: ${APP_AI_API_KEY:}
+    config-crypto-key: ${APP_AI_CONFIG_CRYPTO_KEY:change-this-ai-config-crypto-key-2026}
+    model: ${APP_AI_MODEL:gpt-4.1-mini}
+    temperature: ${APP_AI_TEMPERATURE:0.2}
+    top-k: ${APP_AI_TOP_K:6}
+    cache-ttl-seconds: ${APP_AI_CACHE_TTL_SECONDS:1800}
+    connect-timeout-ms: ${APP_AI_CONNECT_TIMEOUT_MS:3000}
+    read-timeout-ms: ${APP_AI_READ_TIMEOUT_MS:20000}

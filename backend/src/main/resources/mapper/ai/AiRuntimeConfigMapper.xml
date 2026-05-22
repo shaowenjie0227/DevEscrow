@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.ai.mapper.AiRuntimeConfigMapper">
+    <resultMap id="AiRuntimeConfigResultMap" type="com.programmer.escrow.ai.entity.AiRuntimeConfigEntity">
+        <id column="id" property="id"/>
+        <result column="config_key" property="configKey"/>
+        <result column="enabled" property="enabled"/>
+        <result column="provider" property="provider"/>
+        <result column="base_url" property="baseUrl"/>
+        <result column="chat_path" property="chatPath"/>
+        <result column="api_key_ciphertext" property="apiKeyCiphertext"/>
+        <result column="model" property="model"/>
+        <result column="temperature" property="temperature"/>
+        <result column="top_k" property="topK"/>
+        <result column="fallback_enabled" property="fallbackEnabled"/>
+        <result column="cache_ttl_seconds" property="cacheTtlSeconds"/>
+        <result column="connect_timeout_ms" property="connectTimeoutMs"/>
+        <result column="read_timeout_ms" property="readTimeoutMs"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, config_key, enabled, provider, base_url, chat_path, api_key_ciphertext, model, temperature, top_k,
+        fallback_enabled, cache_ttl_seconds, connect_timeout_ms, read_timeout_ms, created_at, updated_at
+    </sql>
+
+    <select id="selectByConfigKey" resultMap="AiRuntimeConfigResultMap">
+        select <include refid="BaseColumns"/>
+        from `ai_runtime_config`
+        where config_key = #{configKey}
+        limit 1
+    </select>
+
+    <insert id="insert" parameterType="com.programmer.escrow.ai.entity.AiRuntimeConfigEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `ai_runtime_config` (
+            config_key, enabled, provider, base_url, chat_path, api_key_ciphertext, model, temperature, top_k,
+            fallback_enabled, cache_ttl_seconds, connect_timeout_ms, read_timeout_ms, created_at, updated_at
+        ) values (
+            #{configKey}, #{enabled}, #{provider}, #{baseUrl}, #{chatPath}, #{apiKeyCiphertext}, #{model}, #{temperature}, #{topK},
+            #{fallbackEnabled}, #{cacheTtlSeconds}, #{connectTimeoutMs}, #{readTimeoutMs}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.programmer.escrow.ai.entity.AiRuntimeConfigEntity">
+        update `ai_runtime_config`
+        set enabled = #{enabled},
+            provider = #{provider},
+            base_url = #{baseUrl},
+            chat_path = #{chatPath},
+            api_key_ciphertext = #{apiKeyCiphertext},
+            model = #{model},
+            temperature = #{temperature},
+            top_k = #{topK},
+            fallback_enabled = #{fallbackEnabled},
+            cache_ttl_seconds = #{cacheTtlSeconds},
+            connect_timeout_ms = #{connectTimeoutMs},
+            read_timeout_ms = #{readTimeoutMs},
+            updated_at = #{updatedAt}
+        where id = #{id}
+    </update>
+</mapper>

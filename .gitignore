@@ -5,3 +5,4 @@ frontend/dist/
 .vscode/
 *.log
 *.tmp
+backend/config/application-local.yml

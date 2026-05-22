@@ -4,6 +4,7 @@ import com.programmer.escrow.config.properties.CorsProperties;
 import com.programmer.escrow.security.JwtAuthenticationFilter;
 import com.programmer.escrow.security.RestAccessDeniedHandler;
 import com.programmer.escrow.security.RestAuthenticationEntryPoint;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -40,6 +41,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/admin/**").permitAll()
                         .requestMatchers(
                                 "/api/auth/login",

@@ -19,6 +19,7 @@ public final class RedisKeys {
     public static final String DEMAND_DETAIL = "demand:detail:%s";
     public static final String CHAT_RECENT = "chat:recent:%s";
     public static final String CHAT_UNREAD = "chat:unread:%s";
+    public static final String AI_DEMAND_DRAFT = "ai:demand:draft:%s";
 
     private RedisKeys() {
     }

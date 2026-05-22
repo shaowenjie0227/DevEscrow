@@ -148,6 +148,38 @@ export function deleteAdminKnowledgeBase(id) {
   return http.delete(`/api/admin/knowledge-bases/${id}`)
 }
 
+export function fetchAdminAiRuntimeConfig() {
+  return http.get('/api/admin/ai/runtime-config')
+}
+
+export function updateAdminAiRuntimeConfig(data) {
+  return http.put('/api/admin/ai/runtime-config', data)
+}
+
+export function fetchAdminAiPromptTemplates() {
+  return http.get('/api/admin/ai/prompt-templates')
+}
+
+export function createAdminAiPromptTemplate(data) {
+  return http.post('/api/admin/ai/prompt-templates', data)
+}
+
+export function updateAdminAiPromptTemplate(id, data) {
+  return http.put(`/api/admin/ai/prompt-templates/${id}`, data)
+}
+
+export function toggleAdminAiPromptTemplateStatus(id, data) {
+  return http.post(`/api/admin/ai/prompt-templates/${id}/status`, data)
+}
+
+export function deleteAdminAiPromptTemplate(id) {
+  return http.delete(`/api/admin/ai/prompt-templates/${id}`)
+}
+
+export function fetchAdminAiCallLogs(params) {
+  return http.get('/api/admin/ai/call-logs', { params })
+}
+
 export function fetchAdminResources(params) {
   return http.get('/api/admin/resources', { params })
 }

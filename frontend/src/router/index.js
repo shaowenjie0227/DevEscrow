@@ -42,6 +42,7 @@ const CommunityManageView = () => import('@/views/admin/CommunityManageView.vue'
 const SkillTagManageView = () => import('@/views/admin/SkillTagManageView.vue')
 const DemandCategoryManageView = () => import('@/views/admin/DemandCategoryManageView.vue')
 const KnowledgeBaseManageView = () => import('@/views/admin/KnowledgeBaseManageView.vue')
+const AdminAiCenterView = () => import('@/views/admin/AdminAiCenterView.vue')
 const AdminDemandAuditView = () => import('@/views/admin/AdminDemandAuditView.vue')
 const AdminOrderListView = () => import('@/views/admin/AdminOrderListView.vue')
 const AdminDisputeListView = () => import('@/views/admin/AdminDisputeListView.vue')
@@ -111,6 +112,7 @@ const routes = [
       { path: 'skill-tags', component: SkillTagManageView },
       { path: 'categories', component: DemandCategoryManageView },
       { path: 'knowledge-bases', component: KnowledgeBaseManageView },
+      { path: 'ai-center', component: AdminAiCenterView },
       { path: 'users', component: AdminUserListView },
       { path: 'demands', component: AdminDemandAuditView },
       { path: 'orders', component: AdminOrderListView },

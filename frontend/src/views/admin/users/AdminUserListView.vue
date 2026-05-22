@@ -1063,16 +1063,16 @@ onMounted(async () => {
   margin-top: 14px;
 }
 
-:deep(.ban-dialog .el-dialog) {
+:global(.ban-dialog.el-dialog) {
   border-radius: 28px;
   overflow: hidden;
 }
 
-:deep(.ban-dialog .el-dialog__header) {
+:global(.ban-dialog .el-dialog__header) {
   display: none;
 }
 
-:deep(.ban-dialog .el-dialog__body) {
+:global(.ban-dialog .el-dialog__body) {
   padding: 22px 22px 6px;
 }
 

@@ -3,7 +3,20 @@ import { useAdminAuthStore } from '@/stores/adminAuth'
 import { useAuthStore } from '@/stores/auth'
 import { emitAuthExpired } from '@/utils/authEvents'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const DEFAULT_API_BASE_URL =
+  typeof window !== 'undefined'
+    ? (() => {
+        const { protocol, hostname, port, origin } = window.location
+        const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1'
+        const isFrontendDevPort = port === '5173' || port === '4173'
+        if (isLocalHost && isFrontendDevPort) {
+          return `${protocol}//${hostname}:8080`
+        }
+        return origin
+      })()
+    : ''
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
 
 const http = axios.create({
   baseURL: API_BASE_URL,
@@ -51,7 +64,12 @@ function handleAuthFailure(url = '', message = '登录状态已失效，请重�
 }
 
 http.interceptors.request.use((config) => {
-  const tokenKey = isAdminRequest(config.url) ? 'admin_token' : 'user_token'
+  const requestUrl = config.url || ''
+  if (isLoginRequest(requestUrl)) {
+    return config
+  }
+
+  const tokenKey = isAdminRequest(requestUrl) ? 'admin_token' : 'user_token'
   const token = window.localStorage.getItem(tokenKey)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`

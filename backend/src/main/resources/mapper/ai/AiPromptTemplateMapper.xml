@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.programmer.escrow.ai.mapper.AiPromptTemplateMapper">
+    <resultMap id="AiPromptTemplateResultMap" type="com.programmer.escrow.ai.entity.AiPromptTemplateEntity">
+        <id column="id" property="id"/>
+        <result column="scene_code" property="sceneCode"/>
+        <result column="scene_name" property="sceneName"/>
+        <result column="system_prompt" property="systemPrompt"/>
+        <result column="user_prompt_template" property="userPromptTemplate"/>
+        <result column="model" property="model"/>
+        <result column="temperature" property="temperature"/>
+        <result column="top_k" property="topK"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, scene_code, scene_name, system_prompt, user_prompt_template, model, temperature, top_k, status, created_at, updated_at
+    </sql>
+
+    <insert id="insert" parameterType="com.programmer.escrow.ai.entity.AiPromptTemplateEntity" useGeneratedKeys="true" keyProperty="id">
+        insert into `ai_prompt_template` (
+            scene_code, scene_name, system_prompt, user_prompt_template, model, temperature, top_k, status, created_at, updated_at
+        )
+        values (
+            #{sceneCode}, #{sceneName}, #{systemPrompt}, #{userPromptTemplate}, #{model}, #{temperature}, #{topK}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.programmer.escrow.ai.entity.AiPromptTemplateEntity">
+        update `ai_prompt_template`
+        set scene_code = #{sceneCode},
+            scene_name = #{sceneName},
+            system_prompt = #{systemPrompt},
+            user_prompt_template = #{userPromptTemplate},
+            model = #{model},
+            temperature = #{temperature},
+            top_k = #{topK},
+            updated_at = #{updatedAt}
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update `ai_prompt_template`
+        set status = #{status},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from `ai_prompt_template`
+        where id = #{id}
+    </delete>
+
+    <select id="selectById" resultMap="AiPromptTemplateResultMap">
+        select <include refid="BaseColumns"/> from `ai_prompt_template` where id = #{id} limit 1
+    </select>
+
+    <select id="selectBySceneCode" resultMap="AiPromptTemplateResultMap">
+        select <include refid="BaseColumns"/> from `ai_prompt_template` where scene_code = #{sceneCode} limit 1
+    </select>
+
+    <select id="selectActiveBySceneCode" resultMap="AiPromptTemplateResultMap">
+        select <include refid="BaseColumns"/> from `ai_prompt_template` where scene_code = #{sceneCode} and status = 1 limit 1
+    </select>
+
+    <select id="selectAdminList" resultMap="AiPromptTemplateResultMap">
+        select <include refid="BaseColumns"/> from `ai_prompt_template` order by scene_code asc, id desc
+    </select>
+</mapper>
